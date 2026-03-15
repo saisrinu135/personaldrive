@@ -76,6 +76,7 @@ class AuthService:
         access_token = self.create_access_token(user.id, user.is_admin)
         refresh_token = self.create_refresh_token(user.id, user.is_admin)
         user.last_login = datetime.utcnow()
+        self.db.add(user)
 
         return {
             "access_token": access_token,

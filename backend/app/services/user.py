@@ -148,7 +148,7 @@ class UserService:
             await self.db.execute(
                 update(User).where(User.id == user_id).values(**update_data)
             )
-            await self.db.refresh(user)
+            self.db.add(user)
         
         return user
 
@@ -177,6 +177,7 @@ class UserService:
                 password=hash_password(payload.new_password)
             )
         )
+        self.db.add(user)
         
         return {"message": "Password updated successfully"}
 
@@ -187,7 +188,7 @@ class UserService:
         await self.db.execute(
             update(User).where(User.id == user_id).values(is_active=True)
         )
-        await self.db.refresh(user)
+        self.db.add(User)
         
         return user
 
@@ -198,7 +199,7 @@ class UserService:
         await self.db.execute(
             update(User).where(User.id == user_id).values(is_active=False)
         )
-        await self.db.refresh(user)
+        self.db.add(user)
         
         return user
 
@@ -206,6 +207,7 @@ class UserService:
         """Delete user account"""
         user = await self.get_by_id(user_id)
         await self.db.delete(user)
+        await self.db.commit()
         return {"message": "User deleted successfully"}
 
     async def get_user_profile(self, user_id: str, current_user: User) -> User:

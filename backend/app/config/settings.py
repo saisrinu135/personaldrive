@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRY_HOURS: int = 24
 
     # Encryption
-    ENCRYPTION_KEY: str = os.getenv("ENCRYPTION_KEY", "your-encryption-key-32-chars-long")
+    ENCRYPTION_KEY: str = os.getenv("ENCRYPTION_KEY")
 
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
