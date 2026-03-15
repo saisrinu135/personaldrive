@@ -10,7 +10,7 @@ class Object(DBBase):
     __tablename__ = "objects"
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
-    provider_id = Column(UUID(as_uuid=True), ForeignKey("providers.id", ondelete='CASCADE'), nullable=False, index=True)
+    provider_id = Column(UUID(as_uuid=True), ForeignKey("storage_providers.id", ondelete='CASCADE'), nullable=False, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     # S3 Identity

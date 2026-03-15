@@ -13,6 +13,7 @@ class ProviderType(str, enum.Enum):
     oracle = "oracle"
     aws = "aws"
     cloudflare = "cloudflare"
+    others = "others"
 
 
 
@@ -24,6 +25,7 @@ class StorageProvider(DBBase):
     
     name = Column(String, nullable=False)
     provider_type = Column(Enum(ProviderType), nullable=False)
+    provider_name = Column(String, nullable=True)
     is_default = Column(Boolean, nullable=True)
 
     # S3 Connection
@@ -45,6 +47,7 @@ class StorageProvider(DBBase):
 
     # Relationship
     user = relationship("User", back_populates="providers")
+    objects = relationship("Object", back_populates="provider")
 
 
     def __repr__(self):

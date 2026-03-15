@@ -4,7 +4,15 @@ from app.config.settings import get_settings
 import secrets
 
 settings = get_settings()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Use argon2 instead of bcrypt to avoid 72-byte limitation
+pwd_context = CryptContext(
+    schemes=["argon2"],
+    deprecated="auto",
+    argon2__rounds=4,
+    argon2__memory_cost=65536,
+    argon2__parallelism=1
+)
 
 
 def generate_encryption_key() -> bytes:
@@ -13,10 +21,12 @@ def generate_encryption_key() -> bytes:
 
 
 def hash_password(password: str) -> str:
+    """Hash password using argon2."""
     return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify password using argon2."""
     return pwd_context.verify(plain_password, hashed_password)
 
 

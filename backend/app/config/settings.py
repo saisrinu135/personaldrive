@@ -17,10 +17,18 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://cloudstorage_user:cloudstorage_pass@localhost:5432/cloudstorage_db")
+    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "cloudstorage_user")
+    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "cloudstorage_pass")
+    POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "localhost")
+    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "cloudstorage")
+    POSTGRES_PORT: str = os.getenv("POSTGRES_PORT", "5432")
+    
+    @property
+    def DATABASE_URL(self) -> str:
+        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"  
 
     # JWT
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-super-secret-key-change-this-in-production")
+    SECRET_KEY: str = os.getenv("SECRET_KEY")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRY_HOURS: int = 24

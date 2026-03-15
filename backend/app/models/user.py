@@ -19,6 +19,7 @@ class User(DBBase):
     is_admin = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), default=get_current_utc)
     updated_at = Column(DateTime(timezone=True), default=get_current_utc, onupdate=get_current_utc)
+    last_login = Column(DateTime(timezone=True), nullable=True)
 
     providers = relationship("StorageProvider",back_populates="user",cascade="all, delete-orphan")
     objects = relationship("Object", back_populates="user", cascade="all, delete-orphan")
