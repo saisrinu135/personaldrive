@@ -1,5 +1,6 @@
 import axiosInstance from '@/lib/axios';
-import { RegisterRequest, RegisterResponse, User, UpdateProfileRequest, ChangePasswordRequest } from '@/types/user.types';
+import { RegisterRequest, RegisterResponse, UpdateProfileRequest, ChangePasswordRequest } from '@/types/user.types';
+import { User } from '@/types/auth.types';
 
 // Validation helpers
 export const validateEmail = (email: string): boolean => {

@@ -1,7 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from fastapi import HTTPException, status
 
 from app.models.provider import ProviderType, StorageProvider
@@ -10,6 +10,8 @@ from app.config.settings import get_settings
 
 from app.schemas.provider import ProviderCreate
 from app.clients.factory import StorageClientFactory
+
+from app.models.object import Object
 
 
 settings = get_settings()
@@ -281,3 +283,30 @@ class StorageService:
             HTTPException: 409 if provider with same name already exists
         """
         return await self._create_provider(user_id=user_id, provider_data=provider_data)
+    
+    
+    # async def get_provider_storage_usage(self, user_id: UUID, provider_id: UUID) -> Dict[str, Any]:
+    #     """Get storage usage for a specific provider"""
+    #     provider = await self.get_by_id(user_id, provider_id, raise_exception=True)
+        
+    #     # Query objects for this provider
+    #     query = select(func.sum(Object.size_bytes), func.count(Object.id)).where(
+    #         and_(Object.user_id == user_id, Object.provider_id == provider_id)
+    #     )
+        
+    #     result = await self.db.execute(query)
+    #     total_size, total_count = result.first()
+        
+    #     usage_data = {
+    #         "provider_name": provider.name,
+    #         "total_size_bytes": total_size or 0,
+    #         "total_objects": total_count or 0,
+    #         "storage_limit_gb": provider.storage_limit_gb,
+    #         "usage_percentage": None
+    #     }
+        
+    #     if provider.storage_limit_gb:
+    #         usage_gb = (total_size or 0) / (1024 * 1024 * 1024)
+    #         usage_data["usage_percentage"] = round((usage_gb / provider.storage_limit_gb) * 100, 2)
+        
+    #     return usage_data

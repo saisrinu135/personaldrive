@@ -1,4 +1,7 @@
 import type { Metadata } from 'next';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { ErrorBoundary } from '@/components/base/ErrorBoundary';
+import { ToastProvider } from '@/components/base/Toast';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -13,7 +16,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ErrorBoundary>
+          <ToastProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </ToastProvider>
+        </ErrorBoundary>
+      </body>
     </html>
   );
 }
