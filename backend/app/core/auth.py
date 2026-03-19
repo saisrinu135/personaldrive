@@ -5,8 +5,7 @@ from fastapi.security import HTTPBearer
 from fastapi import HTTPException, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from jwt import PyJWT, PyJWTError
-
+from jose import JWTError, jwt
 
 from app.services.user import UserService
 from app.config.settings import get_settings
@@ -20,7 +19,6 @@ settings = get_settings()
 class TokenService(HTTPBearer):
     def __init__(self):
         super().__init__(auto_error=False)
-        self.jwt = PyJWT()
     
     def _create_token(self, user_id: int, user_role: str, exp: datetime, type: str):
         payload = {
@@ -29,7 +27,7 @@ class TokenService(HTTPBearer):
             "exp": exp.timestamp(),
             "type": type
         }
-        return self.jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+        return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     
     def create_access_token(self, user_id: int, user_role: str):
         """
@@ -47,14 +45,14 @@ class TokenService(HTTPBearer):
 
     def _verify_token(self, token: str):
         try:
-            payload = self.jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
             user_id: int = payload.get("user_id")
             user_role: str = payload.get("user_role")
             token_type: str = payload.get("type")
             if user_id is None or user_role is None or token_type is None:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
             return {"user_id": user_id, "user_role": user_role, "type": token_type}
-        except PyJWTError:
+        except JWTError:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     
 

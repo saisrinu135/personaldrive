@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-import jwt
+from jose import JWTError, jwt
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,7 +44,7 @@ class AuthService:
             if payload.get("type") != token_type:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token type"
+                    detail=f"Invalid token type. Expected: {token_type}, Got: {payload.get('type')}"
                 )
             return payload
         except jwt.ExpiredSignatureError:
@@ -52,10 +52,10 @@ class AuthService:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired"
             )
-        except jwt.InvalidTokenError:
+        except JWTError as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
+                detail=f"Invalid token: {str(e)}"
             )
 
     async def authenticate(self, email: str, password: str) -> Dict[str, Any]:
