@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui';
 import { Breadcrumb } from '@/components/navigation';
 import { PageLayoutProps } from '@/types/component.types';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const PageLayout: React.FC<PageLayoutProps> = ({
   title,
@@ -184,17 +185,20 @@ const PageLayout: React.FC<PageLayoutProps> = ({
                 </div>
               </div>
 
-              {/* Page Actions */}
-              {actions && (
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.2 }}
-                  className="flex items-center space-x-2"
-                >
-                  {actions}
-                </motion.div>
-              )}
+              {/* Page Actions & ThemeToggle */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+                className="flex items-center space-x-4 pr-2"
+              >
+                {actions && (
+                  <div className="flex items-center space-x-2">
+                    {actions}
+                  </div>
+                )}
+                <ThemeToggle />
+              </motion.div>
             </div>
           </header>
 

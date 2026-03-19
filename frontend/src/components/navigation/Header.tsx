@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { Button, Input } from '@/components/ui';
 import { HeaderProps, NavigationItem } from '@/types/component.types';
 import NavigationMenu from './NavigationMenu';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const Header: React.FC<HeaderProps> = ({
   user,
@@ -168,6 +169,9 @@ const Header: React.FC<HeaderProps> = ({
 
         {/* Right Section - User Menu */}
         <div className="flex items-center space-x-2">
+          
+          <ThemeToggle />
+
           {/* Notifications */}
           <Button
             variant="ghost"

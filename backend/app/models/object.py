@@ -25,8 +25,8 @@ class Object(DBBase):
     # Meta
     meta = Column(JSONB, nullable=True, default=dict)
 
-    uploaded_at = Column(DateTime, default=get_current_utc, nullable=False)
-    last_modified = Column(DateTime, nullable=True)
+    uploaded_at = Column(DateTime(timezone=True), default=get_current_utc, nullable=False)
+    last_modified = Column(DateTime(timezone=True), nullable=True, default=get_current_utc)
 
     # Relationships
     provider = relationship("StorageProvider", back_populates="objects")
