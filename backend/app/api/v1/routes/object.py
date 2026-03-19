@@ -15,10 +15,10 @@ router = APIRouter(prefix="/objects", tags=["Objects"])
 @router.post("/upload", response_model=APIResponse, status_code=201)
 async def upload_object(
     provider_id: UUID,
+    current_user: CurrentUser,
+    db: Database,
     file: UploadFile = File(...),
-    folder_path: Optional[str] = "",
-    current_user: CurrentUser = Depends(),
-    db: Database = Depends()
+    folder_path: Optional[str] = ""
 ):
     """Upload a file to storage"""
     service = ObjectService(db)
@@ -47,13 +47,13 @@ async def upload_object(
 
 @router.get("/", response_model=APIResponse)
 async def list_objects(
+    current_user: CurrentUser,
+    db: Database,
     provider_id: Optional[UUID] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     search: Optional[str] = None,
-    folder_path: Optional[str] = None,
-    current_user: CurrentUser = Depends(),
-    db: Database = Depends()
+    folder_path: Optional[str] = None
 ):
     """List user's objects"""
     service = ObjectService(db)
@@ -86,8 +86,8 @@ async def list_objects(
 @router.get("/{object_id}", response_model=APIResponse)
 async def get_object(
     object_id: UUID,
-    current_user: CurrentUser = Depends(),
-    db: Database = Depends()
+    current_user: CurrentUser,
+    db: Database
 ):
     """Get object details"""
     service = ObjectService(db)
@@ -105,8 +105,8 @@ async def get_object(
 @router.get("/{object_id}/download")
 async def download_object(
     object_id: UUID,
-    current_user: CurrentUser = Depends(),
-    db: Database = Depends()
+    current_user: CurrentUser,
+    db: Database
 ):
     """Download object"""
     service = ObjectService(db)
@@ -123,8 +123,8 @@ async def download_object(
 @router.delete("/{object_id}", response_model=APIResponse)
 async def delete_object(
     object_id: UUID,
-    current_user: CurrentUser = Depends(),
-    db: Database = Depends()
+    current_user: CurrentUser,
+    db: Database
 ):
     """Delete object"""
     service = ObjectService(db)
