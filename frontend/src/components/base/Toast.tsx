@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -51,7 +52,6 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
 
     setToasts(prev => [...prev, newToast]);
 
-    // Auto-remove toast after duration
     if (newToast.duration && newToast.duration > 0) {
       setTimeout(() => {
         removeToast(id);
@@ -82,8 +82,8 @@ interface ToastContainerProps {
 
 const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onRemove }) => {
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm w-full">
-      <AnimatePresence>
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center space-y-3 w-full max-w-md pointer-events-none px-4">
+      <AnimatePresence mode="popLayout">
         {toasts.map(toast => (
           <ToastItem key={toast.id} toast={toast} onRemove={onRemove} />
         ))}
@@ -101,97 +101,81 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
   const getToastStyles = (type: ToastType) => {
     switch (type) {
       case 'success':
-        return 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200';
+        return 'bg-green-500/10 border-green-500/20 text-green-700 dark:text-green-400';
       case 'error':
-        return 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200';
+        return 'bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200';
+        return 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400';
       case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200';
+        return 'bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-400';
       default:
-        return 'bg-background border-border text-foreground';
+        return 'bg-background/80 border-border text-foreground';
     }
   };
 
   const getIcon = (type: ToastType) => {
     switch (type) {
       case 'success':
-        return (
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-        );
+        return <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />;
       case 'error':
-        return (
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-          </svg>
-        );
+        return <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />;
       case 'warning':
-        return (
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-        );
+        return <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />;
       case 'info':
-        return (
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-          </svg>
-        );
+        return <Info className="w-5 h-5 text-blue-600 dark:text-blue-400" />;
     }
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 300, scale: 0.3 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, x: 300, scale: 0.5, transition: { duration: 0.2 } }}
+      layout
+      initial={{ opacity: 0, y: 50, scale: 0.8 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.2 } }}
       className={`
-        relative p-4 rounded-lg border shadow-lg backdrop-blur-sm
+        pointer-events-auto w-auto max-w-full flex items-center gap-3 py-3 px-4 rounded-full border shadow-2xl backdrop-blur-xl
+        ${toast.message ? 'rounded-2xl flex-col items-start gap-1 py-4 px-5' : 'rounded-full'}
         ${getToastStyles(toast.type)}
       `}
     >
-      <div className="flex items-start">
+      <div className="flex items-center gap-3 w-full">
         <div className="flex-shrink-0">
           {getIcon(toast.type)}
         </div>
-        <div className="ml-3 flex-1">
-          <p className="text-sm font-medium">
+        
+        <div className="flex-1 min-w-0 mr-2 flex flex-col justify-center">
+          <p className="text-sm font-semibold truncate">
             {toast.title}
           </p>
           {toast.message && (
-            <p className="mt-1 text-sm opacity-90">
+            <p className="text-xs opacity-80 mt-1 line-clamp-2">
               {toast.message}
             </p>
           )}
           {toast.action && (
-            <div className="mt-2">
+            <div className="mt-2 text-left">
               <button
                 onClick={toast.action.onClick}
-                className="text-sm font-medium underline hover:no-underline"
+                className="text-xs font-bold uppercase tracking-wider underline hover:no-underline opacity-90 transition-opacity hover:opacity-100"
               >
                 {toast.action.label}
               </button>
             </div>
           )}
         </div>
-        <div className="ml-4 flex-shrink-0">
-          <button
-            onClick={() => onRemove(toast.id)}
-            className="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 transition ease-in-out duration-150"
-          >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
-        </div>
+
+        <button
+          onClick={() => onRemove(toast.id)}
+          className="flex-shrink-0 p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-current opacity-60 hover:opacity-100 ml-auto"
+          aria-label="Close"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
     </motion.div>
   );
 };
 
-// Convenience hooks for different toast types
 export const useSuccessToast = () => {
   const { addToast } = useToast();
   return useCallback((title: string, message?: string) => {

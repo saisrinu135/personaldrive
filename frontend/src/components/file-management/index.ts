@@ -1,18 +1,11 @@
-export { FileUploader } from './FileUploader';
-export type { FileUploaderProps } from './FileUploader';
-export { FileUploaderExample } from './FileUploaderExample';
-export { FileList } from './FileList';
-export type { FileListProps } from './FileList';
-export { FileListExample } from './FileListExample';
-export { FileSearch } from './FileSearch';
-export type { FileSearchProps } from './FileSearch';
-export { FileSearchExample } from './FileSearchExample';
-export { FolderBreadcrumb } from './FolderBreadcrumb';
-export type { FolderBreadcrumbProps } from './FolderBreadcrumb';
-export { FolderManager } from './FolderManager';
-export type { FolderManagerProps } from './FolderManager';
-export { FileOrganizer } from './FileOrganizer';
-export type { FileOrganizerProps } from './FileOrganizer';
 export { FileManager } from './FileManager';
 export type { FileManagerProps } from './FileManager';
-export { FileManagerExample } from './FileManagerExample';
+
+export { FileList } from './FileList';
+export type { FileListProps } from './FileList';
+
+export { FileUploader } from './FileUploader';
+export type { FileUploaderProps } from './FileUploader';
+
+export { FileSearch } from './FileSearch';
+export type { FileSearchProps } from './FileSearch';

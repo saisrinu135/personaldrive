@@ -144,4 +144,29 @@ describe('FileList Component', () => {
     const fileName = screen.getByText('test-image.jpg');
     expect(fileName).toHaveAttribute('title', 'test-image.jpg');
   });
+
+  // Since we don't have user-event in this basic setup, we use fireEvent for simplistic integration testing
+  it('opens confirmation dialog on delete click and calls deleteFile on confirm', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    const { deleteFile } = await import('@/services/file.service');
+    
+    renderWithToast(
+      <FileList files={[mockFiles[0]]} providerId="test-provider" />
+    );
+
+    // There should be two buttons per item (Download, Delete). Let's find all buttons.
+    const buttons = screen.getAllByRole('button');
+    // The second button is the delete button
+    fireEvent.click(buttons[1]);
+
+    // Dialog should appear
+    expect(screen.getByText('Delete File')).toBeInTheDocument();
+    expect(screen.getByText(/Are you sure you want to delete/)).toBeInTheDocument();
+
+    // Click confirm inside dialog
+    const confirmButton = screen.getByRole('button', { name: 'Delete' });
+    fireEvent.click(confirmButton);
+
+    expect(deleteFile).toHaveBeenCalledWith('1');
+  });
 });

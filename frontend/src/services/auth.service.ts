@@ -1,21 +1,21 @@
 import axiosInstance from '@/lib/axios';
 import { setAccessToken, setRefreshToken, clearTokens, getAccessToken, getRefreshToken } from './storage.service';
-import { LoginResponse, RefreshResponse, User } from '@/types/auth.types';
+import { APIResponse, LoginResponse, RefreshResponse, User } from '@/types/auth.types';
 import { RegisterRequest, RegisterResponse } from '@/types/user.types';
 import { FormattedError } from '@/lib/axios';
 
 export const login = async (email: string, password: string): Promise<LoginResponse> => {
   try {
-    const response = await axiosInstance.post<LoginResponse>('/api/v1/auth/login', {
+    const response = await axiosInstance.post<APIResponse<LoginResponse>>('/api/v1/auth/login', {
       email,
       password,
     });
     
-    const { access_token, refresh_token } = response.data;
+    const { access_token, refresh_token } = response.data.data;
     setAccessToken(access_token);
     setRefreshToken(refresh_token);
     
-    return response.data;
+    return response.data.data;
   } catch (error) {
     // Clear any existing tokens on login failure
     clearTokens();
@@ -53,12 +53,15 @@ export const logout = async (): Promise<void> => {
 
 export const refreshToken = async (refreshToken: string): Promise<string> => {
   try {
-    const response = await axiosInstance.post<RefreshResponse>('/api/v1/auth/refresh', {
+    const response = await axiosInstance.post<APIResponse<RefreshResponse>>('/api/v1/auth/refresh', {
       refresh_token: refreshToken,
     });
     
-    const { access_token } = response.data;
+    const { access_token, refresh_token: new_refresh_token } = response.data.data;
     setAccessToken(access_token);
+    if (new_refresh_token) {
+      setRefreshToken(new_refresh_token);
+    }
     
     return access_token;
   } catch (error) {
@@ -70,8 +73,8 @@ export const refreshToken = async (refreshToken: string): Promise<string> => {
 
 export const getCurrentUser = async (): Promise<User> => {
   try {
-    const response = await axiosInstance.get<User>('/api/v1/auth/me');
-    return response.data;
+    const response = await axiosInstance.get<APIResponse<User>>('/api/v1/auth/me');
+    return response.data.data;
   } catch (error) {
     // If getting current user fails with 401, it means token is invalid
     if ((error as FormattedError).status === 401) {

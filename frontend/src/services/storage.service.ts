@@ -13,16 +13,21 @@ export const setRefreshToken = (token: string): void => {
   }
 };
 
+const isValidToken = (value: string | null): string | null => {
+  if (!value || value === 'null' || value === 'undefined') return null;
+  return value;
+};
+
 export const getAccessToken = (): string | null => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem(ACCESS_TOKEN_KEY);
+    return isValidToken(localStorage.getItem(ACCESS_TOKEN_KEY));
   }
   return null;
 };
 
 export const getRefreshToken = (): string | null => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
+    return isValidToken(localStorage.getItem(REFRESH_TOKEN_KEY));
   }
   return null;
 };

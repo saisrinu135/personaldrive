@@ -51,6 +51,23 @@ export interface CreateProviderRequest {
 }
 
 /**
+ * Request to update an existing provider (all fields optional)
+ */
+export interface ProviderUpdateRequest {
+  name?: string;
+  provider_type?: ProviderType;
+  endpoint_url?: string;
+  access_key?: string;
+  secret_key?: string;
+  bucket_name?: string;
+  region?: string;
+  provider_name?: string;
+  is_default?: boolean;
+  storage_limit_gb?: number;
+  notes?: string;
+}
+
+/**
  * Request to test provider connection
  */
 export interface TestConnectionRequest {

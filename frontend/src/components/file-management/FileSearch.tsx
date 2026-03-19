@@ -270,7 +270,7 @@ export const FileSearch: React.FC<FileSearchProps> = ({
           label=""
           placeholder={placeholder}
           value={searchQuery}
-          onChange={setSearchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
           icon={<Search className="w-4 h-4" />}
           autoFocus={autoFocus}
           className="pr-20"

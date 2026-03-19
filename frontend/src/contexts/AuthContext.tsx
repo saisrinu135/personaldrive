@@ -128,7 +128,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     try {
       const loginResponse = await authService.login(email, password);
-      const user = await authService.getCurrentUser();
+      // The login response already contains the user object - no need for a separate /me call
+      const user = loginResponse.user ?? await authService.getCurrentUser();
       
       dispatch({
         type: 'AUTH_SUCCESS',

@@ -102,6 +102,8 @@ describe('AuthContext', () => {
       access_token: 'new-token',
       refresh_token: 'new-refresh-token',
       token_type: 'Bearer',
+      expires_in: 1800,
+      user: mockUser,
     };
 
     mockAuthService.login.mockResolvedValue(mockLoginResponse);
@@ -170,6 +172,8 @@ describe('AuthContext', () => {
       access_token: 'new-token',
       refresh_token: 'new-refresh-token',
       token_type: 'Bearer',
+      expires_in: 1800,
+      user: mockUser,
     };
 
     mockUserService.register.mockResolvedValue(mockRegisterResponse);

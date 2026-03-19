@@ -98,10 +98,10 @@ describe('Provider Service - Property-Based Tests', () => {
             bucket_name: fc.string({ minLength: 1 }),
             region: fc.string({ minLength: 1 }),
             // Optional fields can be present or undefined
-            provider_name: fc.option(fc.string({ minLength: 1 })),
-            is_default: fc.option(fc.boolean()),
-            storage_limit_gb: fc.option(fc.integer({ min: 1, max: 10000 })),
-            notes: fc.option(fc.string()),
+            provider_name: fc.option(fc.string({ minLength: 1 }), { nil: undefined }),
+            is_default: fc.option(fc.boolean(), { nil: undefined }),
+            storage_limit_gb: fc.option(fc.integer({ min: 1, max: 10000 }), { nil: undefined }),
+            notes: fc.option(fc.string(), { nil: undefined }),
           }),
           (data) => {
             expect(validateProviderData(data as CreateProviderRequest)).toBe(true);
@@ -365,16 +365,16 @@ describe('Provider Service - Property-Based Tests', () => {
       '2024-01-01T00:00:00.000Z',
       '2024-12-31T23:59:59.999Z'
     ),
-    provider_name: fc.option(fc.string({ minLength: 1 })),
-    is_default: fc.option(fc.boolean()),
-    storage_limit_gb: fc.option(fc.integer({ min: 1, max: 10000 })),
-    notes: fc.option(fc.string()),
+    provider_name: fc.option(fc.string({ minLength: 1 }), { nil: undefined }),
+    is_default: fc.option(fc.boolean(), { nil: undefined }),
+    storage_limit_gb: fc.option(fc.integer({ min: 1, max: 10000 }), { nil: undefined }),
+    notes: fc.option(fc.string(), { nil: undefined }),
     updated_at: fc.option(fc.constantFrom(
       '2023-01-01T00:00:00.000Z',
       '2023-06-15T12:30:45.123Z',
       '2024-01-01T00:00:00.000Z',
       '2024-12-31T23:59:59.999Z'
-    )),
+    ), { nil: undefined }),
   });
 
   const createProviderRequestArb = fc.record({
@@ -385,10 +385,10 @@ describe('Provider Service - Property-Based Tests', () => {
     secret_key: fc.string({ minLength: 1 }),
     bucket_name: fc.string({ minLength: 1 }),
     region: fc.string({ minLength: 1 }),
-    provider_name: fc.option(fc.string({ minLength: 1 })),
-    is_default: fc.option(fc.boolean()),
-    storage_limit_gb: fc.option(fc.integer({ min: 1, max: 10000 })),
-    notes: fc.option(fc.string()),
+    provider_name: fc.option(fc.string({ minLength: 1 }), { nil: undefined }),
+    is_default: fc.option(fc.boolean(), { nil: undefined }),
+    storage_limit_gb: fc.option(fc.integer({ min: 1, max: 10000 }), { nil: undefined }),
+    notes: fc.option(fc.string(), { nil: undefined }),
   });
 
   /**
@@ -405,32 +405,25 @@ describe('Provider Service - Property-Based Tests', () => {
           fc.array(providerArb, { minLength: 2, maxLength: 10 }),
           async (providers) => {
             vi.clearAllMocks();
-            
-            // Create mixed providers ensuring we have at least one active and one inactive
+
             const mixedProviders = providers.map((provider, index) => ({
               ...provider,
-              is_active: index < Math.ceil(providers.length / 2) // First half active, second half inactive
+              is_active: index < Math.ceil(providers.length / 2)
             }));
-            
-            // Filter to get only active providers for expected result
+
             const activeProviders = mixedProviders.filter(p => p.is_active);
-            
-            // Ensure we have at least one active provider
             expect(activeProviders.length).toBeGreaterThan(0);
-            
-            // Mock axios to return only active providers when filtered
+
+            // APIResponse envelope
             vi.mocked(axiosInstance.get).mockResolvedValueOnce({
-              data: activeProviders
+              data: { status: true, message: 'ok', data: activeProviders }
             });
-            
-            // Call listProviders with is_active=true filter
+
             const result = await listProviders({ is_active: true });
-            
-            // Verify all returned providers have is_active=true
+
             expect(result.every(provider => provider.is_active)).toBe(true);
             expect(result).toEqual(activeProviders);
-            
-            // Verify correct API call was made
+
             expect(axiosInstance.get).toHaveBeenCalledWith(
               '/api/v1/providers/',
               { params: { is_active: true } }
@@ -447,32 +440,24 @@ describe('Provider Service - Property-Based Tests', () => {
           fc.array(providerArb, { minLength: 2, maxLength: 10 }),
           async (providers) => {
             vi.clearAllMocks();
-            
-            // Create mixed providers ensuring we have at least one active and one inactive
+
             const mixedProviders = providers.map((provider, index) => ({
               ...provider,
-              is_active: index < Math.ceil(providers.length / 2) // First half active, second half inactive
+              is_active: index < Math.ceil(providers.length / 2)
             }));
-            
-            // Filter to get only inactive providers for expected result
+
             const inactiveProviders = mixedProviders.filter(p => !p.is_active);
-            
-            // Ensure we have at least one inactive provider
             expect(inactiveProviders.length).toBeGreaterThan(0);
-            
-            // Mock axios to return only inactive providers when filtered
+
             vi.mocked(axiosInstance.get).mockResolvedValueOnce({
-              data: inactiveProviders
+              data: { status: true, message: 'ok', data: inactiveProviders }
             });
-            
-            // Call listProviders with is_active=false filter
+
             const result = await listProviders({ is_active: false });
-            
-            // Verify all returned providers have is_active=false
+
             expect(result.every(provider => !provider.is_active)).toBe(true);
             expect(result).toEqual(inactiveProviders);
-            
-            // Verify correct API call was made
+
             expect(axiosInstance.get).toHaveBeenCalledWith(
               '/api/v1/providers/',
               { params: { is_active: false } }
@@ -492,33 +477,18 @@ describe('Provider Service - Property-Based Tests', () => {
    * return a provider object with is_active=true.
    */
   describe('Property 8: Provider Activation State Change', () => {
-    it('should change provider state from inactive to active', async () => {
+    it('should call activate endpoint for any inactive provider', async () => {
       await fc.assert(
         fc.asyncProperty(
           providerArb.map(provider => ({ ...provider, is_active: false })),
           async (inactiveProvider) => {
             vi.clearAllMocks();
-            
-            // Create the expected activated provider
-            const activatedProvider: Provider = {
-              ...inactiveProvider,
-              is_active: true
-            };
-            
-            // Mock axios to return the activated provider
-            vi.mocked(axiosInstance.put).mockResolvedValueOnce({
-              data: activatedProvider
-            });
-            
-            // Call activateProvider
-            const result = await activateProvider(inactiveProvider.id);
-            
-            // Verify the provider is now active
-            expect(result.is_active).toBe(true);
-            expect(result.id).toBe(inactiveProvider.id);
-            expect(result).toEqual(activatedProvider);
-            
-            // Verify correct API call was made
+
+            vi.mocked(axiosInstance.put).mockResolvedValueOnce({ data: {} });
+
+            // activateProvider now returns void
+            await activateProvider(inactiveProvider.id);
+
             expect(axiosInstance.put).toHaveBeenCalledWith(
               `/api/v1/providers/${inactiveProvider.id}/activate`
             );
@@ -537,33 +507,18 @@ describe('Provider Service - Property-Based Tests', () => {
    * return a provider object with is_active=false.
    */
   describe('Property 9: Provider Deactivation State Change', () => {
-    it('should change provider state from active to inactive', async () => {
+    it('should call deactivate endpoint for any active provider', async () => {
       await fc.assert(
         fc.asyncProperty(
           providerArb.map(provider => ({ ...provider, is_active: true })),
           async (activeProvider) => {
             vi.clearAllMocks();
-            
-            // Create the expected deactivated provider
-            const deactivatedProvider: Provider = {
-              ...activeProvider,
-              is_active: false
-            };
-            
-            // Mock axios to return the deactivated provider
-            vi.mocked(axiosInstance.put).mockResolvedValueOnce({
-              data: deactivatedProvider
-            });
-            
-            // Call deactivateProvider
-            const result = await deactivateProvider(activeProvider.id);
-            
-            // Verify the provider is now inactive
-            expect(result.is_active).toBe(false);
-            expect(result.id).toBe(activeProvider.id);
-            expect(result).toEqual(deactivatedProvider);
-            
-            // Verify correct API call was made
+
+            vi.mocked(axiosInstance.put).mockResolvedValueOnce({ data: {} });
+
+            // deactivateProvider now returns void
+            await deactivateProvider(activeProvider.id);
+
             expect(axiosInstance.put).toHaveBeenCalledWith(
               `/api/v1/providers/${activeProvider.id}/deactivate`
             );

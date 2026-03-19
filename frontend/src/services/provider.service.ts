@@ -1,149 +1,124 @@
 import axiosInstance from '@/lib/axios';
+import { APIResponse } from '@/types/auth.types';
 import {
   Provider,
   CreateProviderRequest,
+  ProviderUpdateRequest,
   TestConnectionRequest,
   TestConnectionResponse,
-  ListProvidersParams
+  ListProvidersParams,
 } from '@/types/provider.types';
 
-// Validation Functions
+// ─── Validation helpers ───────────────────────────────────────────────────────
 
-/**
- * Validates that a URL starts with http:// or https://
- * @param url - The URL to validate
- * @returns true if valid, false otherwise
- */
 export const validateEndpointUrl = (url: string): boolean => {
-  if (!url || url.trim() === '') {
-    return false;
-  }
+  if (!url || url.trim() === '') return false;
   return url.startsWith('http://') || url.startsWith('https://');
 };
 
-/**
- * Validates that all required provider fields are populated
- * @param data - The provider data to validate
- * @returns true if all required fields are present, false otherwise
- */
 export const validateProviderData = (
   data: CreateProviderRequest | TestConnectionRequest
 ): boolean => {
-  const requiredFields: (keyof CreateProviderRequest)[] = [
-    'name',
-    'provider_type',
-    'endpoint_url',
-    'access_key',
-    'secret_key',
-    'bucket_name',
-    'region'
+  const required: (keyof CreateProviderRequest)[] = [
+    'name', 'provider_type', 'endpoint_url', 'access_key', 'secret_key', 'bucket_name', 'region',
   ];
-  
-  return requiredFields.every(field => {
+  return required.every((field) => {
     const value = data[field];
     return value !== undefined && value !== null && value !== '';
   });
 };
 
-// API Functions
+// ─── API functions ────────────────────────────────────────────────────────────
 
 /**
- * Tests connection to a storage provider without persisting it
- * @param data - Connection parameters to test
- * @returns Promise with test result
- * @throws Error if validation fails or API request fails
+ * Test connection to a provider without saving.
+ * Backend: POST /api/v1/providers/test-connection
  */
 export const testConnection = async (
   data: TestConnectionRequest
 ): Promise<TestConnectionResponse> => {
-  // Client-side validation
-  if (!validateProviderData(data)) {
-    throw new Error('All required fields must be populated');
-  }
-  
-  if (!validateEndpointUrl(data.endpoint_url)) {
+  if (!validateProviderData(data)) throw new Error('All required fields must be populated');
+  if (!validateEndpointUrl(data.endpoint_url))
     throw new Error('Endpoint URL must start with http:// or https://');
-  }
-  
+
+  // This endpoint returns its own shape (not wrapped in APIResponse)
   const response = await axiosInstance.post<TestConnectionResponse>(
     '/api/v1/providers/test-connection',
     data
   );
-  
   return response.data;
 };
 
 /**
- * Creates a new storage provider
- * @param data - Provider data to create
- * @returns Promise with created provider
- * @throws Error if validation fails or API request fails
+ * Create a new storage provider.
+ * Backend: POST /api/v1/providers/
  */
-export const createProvider = async (
-  data: CreateProviderRequest
-): Promise<Provider> => {
-  // Client-side validation
-  if (!validateProviderData(data)) {
-    throw new Error('All required fields must be populated');
-  }
-  
-  if (!validateEndpointUrl(data.endpoint_url)) {
+export const createProvider = async (data: CreateProviderRequest): Promise<Provider> => {
+  if (!validateProviderData(data)) throw new Error('All required fields must be populated');
+  if (!validateEndpointUrl(data.endpoint_url))
     throw new Error('Endpoint URL must start with http:// or https://');
-  }
-  
-  const response = await axiosInstance.post<Provider>(
-    '/api/v1/providers/',
+
+  const response = await axiosInstance.post<APIResponse<Provider>>('/api/v1/providers/', data);
+  return response.data.data;
+};
+
+/**
+ * List all providers for the current user.
+ * Backend: GET /api/v1/providers/
+ */
+export const listProviders = async (params?: ListProvidersParams): Promise<Provider[]> => {
+  const response = await axiosInstance.get<APIResponse<Provider[]>>('/api/v1/providers/', {
+    params,
+  });
+  return response.data.data;
+};
+
+/**
+ * Get a single provider by ID.
+ * Backend: GET /api/v1/providers/{provider_id}
+ */
+export const getProvider = async (providerId: string): Promise<Provider> => {
+  const response = await axiosInstance.get<APIResponse<Provider>>(
+    `/api/v1/providers/${providerId}`
+  );
+  return response.data.data;
+};
+
+/**
+ * Update a provider's settings.
+ * Backend: PUT /api/v1/providers/{provider_id}
+ */
+export const updateProvider = async (
+  providerId: string,
+  data: ProviderUpdateRequest
+): Promise<Provider> => {
+  const response = await axiosInstance.put<APIResponse<Provider>>(
+    `/api/v1/providers/${providerId}`,
     data
   );
-  
-  return response.data;
+  return response.data.data;
 };
 
 /**
- * Lists all storage providers with optional filtering
- * @param params - Optional filter parameters
- * @returns Promise with array of providers
- * @throws Error if API request fails
+ * Activate a storage provider.
+ * Backend: PUT /api/v1/providers/{provider_id}/activate
  */
-export const listProviders = async (
-  params?: ListProvidersParams
-): Promise<Provider[]> => {
-  const response = await axiosInstance.get<Provider[]>(
-    '/api/v1/providers/',
-    { params }
-  );
-  
-  return response.data;
+export const activateProvider = async (providerId: string): Promise<void> => {
+  await axiosInstance.put(`/api/v1/providers/${providerId}/activate`);
 };
 
 /**
- * Activates a storage provider
- * @param provider_id - ID of the provider to activate
- * @returns Promise with updated provider
- * @throws Error if API request fails
+ * Deactivate a storage provider.
+ * Backend: PUT /api/v1/providers/{provider_id}/deactivate
  */
-export const activateProvider = async (
-  provider_id: string
-): Promise<Provider> => {
-  const response = await axiosInstance.put<Provider>(
-    `/api/v1/providers/${provider_id}/activate`
-  );
-  
-  return response.data;
+export const deactivateProvider = async (providerId: string): Promise<void> => {
+  await axiosInstance.put(`/api/v1/providers/${providerId}/deactivate`);
 };
 
 /**
- * Deactivates a storage provider
- * @param provider_id - ID of the provider to deactivate
- * @returns Promise with updated provider
- * @throws Error if API request fails
+ * Delete a storage provider.
+ * Backend: DELETE /api/v1/providers/{provider_id}
  */
-export const deactivateProvider = async (
-  provider_id: string
-): Promise<Provider> => {
-  const response = await axiosInstance.put<Provider>(
-    `/api/v1/providers/${provider_id}/deactivate`
-  );
-  
-  return response.data;
+export const deleteProvider = async (providerId: string): Promise<void> => {
+  await axiosInstance.delete(`/api/v1/providers/${providerId}`);
 };

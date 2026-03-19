@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/base/Toast';
 import { FileItem } from '@/types/file.types';
 import { downloadFile, deleteFile } from '@/services/file.service';
@@ -51,6 +52,7 @@ export const FileList: React.FC<FileListProps> = ({
 }) => {
   const [filesWithActions, setFilesWithActions] = useState<FileWithActions[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [fileToDelete, setFileToDelete] = useState<FileWithActions | null>(null);
   const { addToast } = useToast();
 
   // Update files with actions when files prop changes
@@ -76,7 +78,7 @@ export const FileList: React.FC<FileListProps> = ({
         await onDownload(file);
       } else {
         // Default download behavior
-        await downloadFile(file.id, providerId);
+        await downloadFile(file.id, file.name);
       }
 
       addToast({
@@ -103,14 +105,19 @@ export const FileList: React.FC<FileListProps> = ({
     }
   }, [onDownload, providerId, addToast]);
 
-  // Handle file deletion
-  const handleDelete = useCallback(async (file: FileWithActions) => {
-    if (file.isDeleting) return;
+  // ─── File Deletion ───
 
-    // Confirm deletion
-    if (!window.confirm(`Are you sure you want to delete "${file.name}"?`)) {
-      return;
-    }
+  // Handle the initial delete button click (opens the dialog)
+  const handleDeleteRequest = useCallback((file: FileWithActions) => {
+    if (file.isDeleting) return;
+    setFileToDelete(file);
+  }, []);
+
+  // Execute actual deletion after confirmation
+  const executeDelete = useCallback(async () => {
+    if (!fileToDelete) return;
+    const file = fileToDelete;
+    setFileToDelete(null); // Close dialog
 
     try {
       // Update file state to show deleting
@@ -126,7 +133,7 @@ export const FileList: React.FC<FileListProps> = ({
         await onDelete(file);
       } else {
         // Default delete behavior
-        await deleteFile(file.id, providerId);
+        await deleteFile(file.id);
         
         // Remove file from local state
         setFilesWithActions(prev => prev.filter(f => f.id !== file.id));
@@ -159,7 +166,7 @@ export const FileList: React.FC<FileListProps> = ({
         )
       );
     }
-  }, [onDelete, providerId, addToast, onRefresh]);
+  }, [fileToDelete, onDelete, providerId, addToast, onRefresh]);
 
   // Get file type icon
   const getFileIcon = useCallback((file: FileWithActions) => {
@@ -264,58 +271,66 @@ export const FileList: React.FC<FileListProps> = ({
     );
   }
 
-  // Grid view
-  if (viewMode === 'grid') {
-    return (
-      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ${className}`}>
-        <AnimatePresence>
-          {fileItems.map((file) => (
-            <motion.div
-              key={file.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.2 }}
-            >
-              <FileGridItem
-                file={file}
-                onDownload={handleDownload}
-                onDelete={handleDelete}
-                getFileIcon={getFileIcon}
-                formatFileSize={formatFileSize}
-                formatDate={formatDate}
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-    );
-  }
-
-  // List view
   return (
-    <div className={`space-y-2 ${className}`}>
-      <AnimatePresence>
-        {fileItems.map((file) => (
-          <motion.div
-            key={file.id}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-          >
-            <FileListItem
-              file={file}
-              onDownload={handleDownload}
-              onDelete={handleDelete}
-              getFileIcon={getFileIcon}
-              formatFileSize={formatFileSize}
-              formatDate={formatDate}
-            />
-          </motion.div>
-        ))}
-      </AnimatePresence>
-    </div>
+    <>
+      {viewMode === 'grid' ? (
+        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ${className}`}>
+          <AnimatePresence>
+            {fileItems.map((file) => (
+              <motion.div
+                key={file.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.2 }}
+              >
+                <FileGridItem
+                  file={file}
+                  onDownload={handleDownload}
+                  onDelete={handleDeleteRequest}
+                  getFileIcon={getFileIcon}
+                  formatFileSize={formatFileSize}
+                  formatDate={formatDate}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      ) : (
+        <div className={`space-y-2 ${className}`}>
+          <AnimatePresence>
+            {fileItems.map((file) => (
+              <motion.div
+                key={file.id}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <FileListItem
+                  file={file}
+                  onDownload={handleDownload}
+                  onDelete={handleDeleteRequest}
+                  getFileIcon={getFileIcon}
+                  formatFileSize={formatFileSize}
+                  formatDate={formatDate}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* Confirmation Dialog mapped independently of views */}
+      <ConfirmDialog
+        isOpen={!!fileToDelete}
+        title="Delete File"
+        message={`Are you sure you want to delete "${fileToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        onConfirm={executeDelete}
+        onCancel={() => setFileToDelete(null)}
+      />
+    </>
   );
 };
 
