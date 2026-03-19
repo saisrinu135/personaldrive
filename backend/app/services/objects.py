@@ -4,7 +4,7 @@ import uuid
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, and_, exists
+from sqlalchemy import select, desc, and_, exists, func
 
 from fastapi import HTTPException, status, UploadFile
 import math
@@ -27,7 +27,7 @@ class ObjectService:
         self.encryption_secret_key = settings.ENCRYPTION_KEY.encode()
     
 
-    async def _check_key_exists(self, user_id, provider_id, new_key):
+    async def _check_key_exists(self, user_id: UUID, provider_id: UUID, new_key: str) -> bool:
         """Check if the generated S3 key already exists for the user and provider"""
         
         stmt = select(exists().where(
@@ -52,23 +52,27 @@ class ObjectService:
         
         # Ensure filename is not empty
         if not filename:
-            filename = f"file_{int(datetime.now().timestamp())}"
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid filename"
+            )
         
         # Limit filename length
         if len(filename) > 255:
-            name, ext = os.path.splitext(filename)
-            max_name_length = 255 - len(ext)
-            filename = name[:max_name_length] + ext
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Filename too long (max 255 characters)"
+            )
         
         return filename
     
-    async def get_storage_client(self, provider: StorageProvider):
+    async def _get_storage_client(self, provider: StorageProvider):
         """Get the appropriate storage client based on provider type"""
-        decrypted_secret = decrypt_secret(provider.encrypted_secret, self.encryption_secret_key)
+        decrypted_secret = decrypt_secret(provider.secret_key, self.encryption_secret_key)
         client = StorageClientFactory.create_client(
             provider.provider_type,
             provider.endpoint_url,
-            provider.access_key,
+            decrypt_secret(provider.access_key, self.encryption_secret_key),
             decrypted_secret,
             provider.bucket_name,
             provider.region
@@ -77,39 +81,217 @@ class ObjectService:
     
     
     async def upload_object(
-    self,
-    user_id: UUID,
-    provider_id:UUID,
-    file: UploadFile,
-    folder_path: str = "",
-    meta: Optional[Dict[str, Any]] = None
-) -> Object:
+        self,
+        user_id: UUID,
+        provider_id: UUID,
+        file: UploadFile,
+        folder_path: str = "",
+        meta: Optional[Dict[str, Any]] = None
+    ) -> Object:
         """Upload an object to storage"""
         
-        # Get the provider
-        provider = await self.storage_service.get_by_id(user_id=user_id, provider_id=provider_id)
-        if not provider.is_active:
-            raise HTTPException(status_code=400, detail="Cannot upload to inactive provider")
+        # Validate file
+        if not file.filename:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No filename provided"
+            )
         
+        # Get the provider
+        provider = await self.storage_service.get_by_id(
+            user_id=user_id, 
+            provider_id=provider_id, 
+            raise_exception=True
+        )
+        
+        if not provider.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="Cannot upload to inactive provider"
+            )
+        
+        # Sanitize and create S3 key
         clean_name = self._sanitize_filename(file.filename)
         s3_key = f"{folder_path.strip('/')}/{clean_name}" if folder_path else clean_name
 
         # Check for existing object
-        if self._check_key_exists(user_id=user_id, provider_id=provider_id, new_key=s3_key):
-            raise HTTPException(status_code=400, detail="An object with the same name already exists in this location")
+        if await self._check_key_exists(user_id=user_id, provider_id=provider_id, new_key=s3_key):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, 
+                detail=f"File '{file.filename}' already exists in this location"
+            )
         
         # Read file content
         content = await file.read()
+        if len(content) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot upload empty file"
+            )
 
         # Get storage client
-        client = self.get_storage_client(provider)
+        client = await self._get_storage_client(provider)
 
         # Upload to storage
         upload_result = await client.upload_object(
             key=s3_key,
             data=content,
-            content_type=file.content_type,
-            meta=meta
+            content_type=file.content_type
         )
 
+        # Create database record
+        obj = Object(
+            user_id=user_id,
+            provider_id=provider_id,
+            s3_key=s3_key,
+            filename=file.filename,
+            content_type=file.content_type,
+            etag=upload_result.get('ETag', '').strip('"'),
+            size_bytes=len(content),
+            meta=meta or {}
+        )
         
+        self.db.add(obj)
+        await self.db.flush()
+        await self.db.commit()
+        await self.db.refresh(obj)
+        
+        return obj
+
+    async def list_objects(
+        self, 
+        user_id: UUID, 
+        provider_id: Optional[UUID] = None,
+        page: int = 1, 
+        limit: int = 20,
+        search: Optional[str] = None,
+        folder_path: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """List user's objects with pagination"""
+        
+        # Validate pagination
+        if page < 1:
+            page = 1
+        if limit < 1 or limit > 100:
+            limit = 20
+            
+        # If provider_id is specified, validate it belongs to user
+        if provider_id:
+            await self.storage_service.get_by_id(
+                user_id=user_id, 
+                provider_id=provider_id, 
+                raise_exception=True
+            )
+        
+        offset = (page - 1) * limit
+        
+        # Build query
+        query = select(Object).where(Object.user_id == user_id)
+        count_query = select(func.count(Object.id)).where(Object.user_id == user_id)
+        
+        if provider_id:
+            query = query.where(Object.provider_id == provider_id)
+            count_query = count_query.where(Object.provider_id == provider_id)
+        
+        if search:
+            search_filter = Object.filename.ilike(f"%{search}%")
+            query = query.where(search_filter)
+            count_query = count_query.where(search_filter)
+        
+        if folder_path:
+            folder_filter = Object.s3_key.like(f"{folder_path}%")
+            query = query.where(folder_filter)
+            count_query = count_query.where(folder_filter)
+        
+        # Get total count
+        total_result = await self.db.execute(count_query)
+        total = total_result.scalar() or 0
+        
+        # Get objects
+        query = query.order_by(Object.uploaded_at.desc()).offset(offset).limit(limit)
+        result = await self.db.execute(query)
+        objects = result.scalars().all()
+        
+        total_pages = math.ceil(total / limit) if total > 0 else 0
+        
+        return {
+            "objects": objects,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "total_pages": total_pages
+        }
+
+    async def get_object(self, user_id: UUID, object_id: UUID) -> Object:
+        """Get object by ID"""
+        query = select(Object).where(
+            and_(Object.id == object_id, Object.user_id == user_id)
+        )
+        result = await self.db.execute(query)
+        obj = result.scalar_one_or_none()
+        
+        if not obj:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Object not found"
+            )
+        
+        return obj
+
+    async def delete_object(self, user_id: UUID, object_id: UUID) -> bool:
+        """Delete an object"""
+        obj = await self.get_object(user_id, object_id)
+        
+        # Get provider
+        provider = await self.storage_service.get_by_id(
+            user_id=user_id, 
+            provider_id=obj.provider_id, 
+            raise_exception=True
+        )
+        
+        # Get storage client
+        client = await self._get_storage_client(provider)
+        
+        try:
+            # Delete from storage
+            await client.delete_object(obj.s3_key)
+        except Exception as e:
+            # Log the error but continue with database deletion
+            # This handles cases where the file was already deleted from storage
+            pass
+        
+        # Delete from database
+        await self.db.delete(obj)
+        await self.db.commit()
+        
+        return True
+
+    async def download_object(self, user_id: UUID, object_id: UUID) -> tuple[bytes, Object]:
+        """Download object content"""
+        obj = await self.get_object(user_id, object_id)
+        
+        # Get provider
+        provider = await self.storage_service.get_by_id(
+            user_id=user_id, 
+            provider_id=obj.provider_id, 
+            raise_exception=True
+        )
+        
+        if not provider.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot download from inactive provider"
+            )
+        
+        # Get storage client
+        client = await self._get_storage_client(provider)
+        
+        try:
+            # Download from storage
+            content = await client.download_object(obj.s3_key)
+            return content, obj
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="File not found in storage"
+            )

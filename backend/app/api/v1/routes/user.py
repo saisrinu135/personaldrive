@@ -6,7 +6,7 @@ from app.config.database import get_db
 from app.services.user import UserService
 from app.core.deps import CurrentUser, CurrentAdminUser
 from app.schemas.user import (
-    RegisterRequest, UserResponse, UserUpdateRequest, 
+    RegisterRequest, UserResponse, UserUpdateRequest,
     AdminUserCreateRequest, ChangePasswordRequest
 )
 from app.schemas.common import APIResponse
@@ -14,6 +14,8 @@ from app.schemas.common import APIResponse
 router = APIRouter(prefix="/users", tags=["Users"])
 
 # Public endpoints
+
+
 @router.post("/register", response_model=APIResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(
     request: RegisterRequest,
@@ -23,7 +25,7 @@ async def register_user(
     user_service = UserService(db)
     user = await user_service.register(request)
     user_data = UserResponse.from_orm(user)
-    
+
     return APIResponse(
         status=True,
         message="User registered successfully",
@@ -31,6 +33,8 @@ async def register_user(
     )
 
 # User endpoints (authenticated)
+
+
 @router.get("/profile", response_model=APIResponse)
 async def get_my_profile(current_user: CurrentUser):
     """Get current user profile"""
@@ -40,6 +44,7 @@ async def get_my_profile(current_user: CurrentUser):
         message="Profile retrieved successfully",
         data=user_data
     )
+
 
 @router.put("/profile", response_model=APIResponse)
 async def update_my_profile(
@@ -51,12 +56,13 @@ async def update_my_profile(
     user_service = UserService(db)
     user = await user_service.update_user(str(current_user.id), request, current_user)
     user_data = UserResponse.from_orm(user)
-    
+
     return APIResponse(
         status=True,
         message="Profile updated successfully",
         data=user_data
     )
+
 
 @router.put("/change-password", response_model=APIResponse)
 async def change_my_password(
@@ -67,7 +73,7 @@ async def change_my_password(
     """Change current user password"""
     user_service = UserService(db)
     result = await user_service.change_password(str(current_user.id), request, current_user)
-    
+
     return APIResponse(
         status=True,
         message=result["message"],
@@ -75,6 +81,8 @@ async def change_my_password(
     )
 
 # Admin endpoints
+
+
 @router.get("/", response_model=APIResponse)
 async def list_users(
     current_user: CurrentAdminUser,
@@ -86,10 +94,10 @@ async def list_users(
     """List all users (Admin only)"""
     user_service = UserService(db)
     result = await user_service.list_users(page, limit, search)
-    
+
     # Convert users to schema
     users_data = [UserResponse.from_orm(user) for user in result["users"]]
-    
+
     return APIResponse(
         status=True,
         message="Users retrieved successfully",
@@ -102,6 +110,7 @@ async def list_users(
         }
     )
 
+
 @router.post("/", response_model=APIResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     request: AdminUserCreateRequest,
@@ -112,12 +121,13 @@ async def create_user(
     user_service = UserService(db)
     user = await user_service.create_user_by_admin(request)
     user_data = UserResponse.from_orm(user)
-    
+
     return APIResponse(
         status=True,
         message="User created successfully",
         data=user_data
     )
+
 
 @router.get("/{user_id}", response_model=APIResponse)
 async def get_user(
@@ -129,12 +139,13 @@ async def get_user(
     user_service = UserService(db)
     user = await user_service.get_user_profile(user_id, current_user)
     user_data = UserResponse.from_orm(user)
-    
+
     return APIResponse(
         status=True,
         message="User retrieved successfully",
         data=user_data
     )
+
 
 @router.put("/{user_id}", response_model=APIResponse)
 async def update_user(
@@ -147,12 +158,13 @@ async def update_user(
     user_service = UserService(db)
     user = await user_service.update_user(user_id, request, current_user)
     user_data = UserResponse.from_orm(user)
-    
+
     return APIResponse(
         status=True,
         message="User updated successfully",
         data=user_data
     )
+
 
 @router.put("/{user_id}/activate", response_model=APIResponse)
 async def activate_user(
@@ -164,12 +176,13 @@ async def activate_user(
     user_service = UserService(db)
     user = await user_service.activate_user(user_id)
     user_data = UserResponse.from_orm(user)
-    
+
     return APIResponse(
         status=True,
         message="User activated successfully",
         data=user_data
     )
+
 
 @router.put("/{user_id}/deactivate", response_model=APIResponse)
 async def deactivate_user(
@@ -181,12 +194,13 @@ async def deactivate_user(
     user_service = UserService(db)
     user = await user_service.deactivate_user(user_id)
     user_data = UserResponse.from_orm(user)
-    
+
     return APIResponse(
         status=True,
         message="User deactivated successfully",
         data=user_data
     )
+
 
 @router.delete("/{user_id}", response_model=APIResponse)
 async def delete_user(
@@ -197,12 +211,13 @@ async def delete_user(
     """Delete user (Admin only)"""
     user_service = UserService(db)
     result = await user_service.delete_user(user_id)
-    
+
     return APIResponse(
         status=True,
         message=result["message"],
         data=None
     )
+
 
 @router.put("/{user_id}/change-password", response_model=APIResponse)
 async def change_user_password(
@@ -214,7 +229,7 @@ async def change_user_password(
     """Change user password (Admin only)"""
     user_service = UserService(db)
     result = await user_service.change_password(user_id, request, current_user)
-    
+
     return APIResponse(
         status=True,
         message=result["message"],

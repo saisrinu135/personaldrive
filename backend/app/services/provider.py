@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
@@ -8,7 +8,7 @@ from app.models.provider import ProviderType, StorageProvider
 from app.core.security import encrypt_secret, decrypt_secret
 from app.config.settings import get_settings
 
-from app.schemas.provider import ProviderCreate
+from app.schemas.provider import ProviderCreate, ProviderUpdate
 from app.clients.factory import StorageClientFactory
 
 from app.models.object import Object
@@ -285,28 +285,68 @@ class StorageService:
         return await self._create_provider(user_id=user_id, provider_data=provider_data)
     
     
-    # async def get_provider_storage_usage(self, user_id: UUID, provider_id: UUID) -> Dict[str, Any]:
-    #     """Get storage usage for a specific provider"""
-    #     provider = await self.get_by_id(user_id, provider_id, raise_exception=True)
+    async def update_provider(self, user_id: UUID, provider_id: UUID, provider_data: ProviderUpdate) -> StorageProvider:
+        """Update provider settings"""
+        provider = await self.get_by_id(user_id=user_id, provider_id=provider_id, raise_exception=True)
         
-    #     # Query objects for this provider
-    #     query = select(func.sum(Object.size_bytes), func.count(Object.id)).where(
-    #         and_(Object.user_id == user_id, Object.provider_id == provider_id)
-    #     )
+        # Update fields that are provided
+        update_data = {}
+        if provider_data.name is not None:
+            update_data["name"] = provider_data.name
+        if provider_data.provider_name is not None:
+            update_data["provider_name"] = provider_data.provider_name
+        if provider_data.is_default is not None:
+            update_data["is_default"] = provider_data.is_default
+        if provider_data.endpoint_url is not None:
+            update_data["endpoint_url"] = provider_data.endpoint_url
+        if provider_data.access_key is not None:
+            update_data["access_key"] = encrypt_secret(provider_data.access_key, self.encryption_secret_key)
+        if provider_data.secret_key is not None:
+            update_data["secret_key"] = encrypt_secret(provider_data.secret_key, self.encryption_secret_key)
+        if provider_data.bucket_name is not None:
+            update_data["bucket_name"] = provider_data.bucket_name
+        if provider_data.region is not None:
+            update_data["region"] = provider_data.region
+        if provider_data.storage_limit_gb is not None:
+            update_data["storage_limit_gb"] = provider_data.storage_limit_gb
+        if provider_data.notes is not None:
+            update_data["notes"] = provider_data.notes
         
-    #     result = await self.db.execute(query)
-    #     total_size, total_count = result.first()
+        if update_data:
+            from sqlalchemy import update
+            await self.db.execute(
+                update(StorageProvider).where(StorageProvider.id == provider_id).values(**update_data)
+            )
+            await self.db.commit()
+            await self.db.refresh(provider)
         
-    #     usage_data = {
-    #         "provider_name": provider.name,
-    #         "total_size_bytes": total_size or 0,
-    #         "total_objects": total_count or 0,
-    #         "storage_limit_gb": provider.storage_limit_gb,
-    #         "usage_percentage": None
-    #     }
+        return provider
+
+    async def get_provider_storage_usage(self, user_id: UUID, provider_id: UUID) -> Dict[str, Any]:
+        """Get storage usage for a specific provider"""
+        provider = await self.get_by_id(user_id, provider_id, raise_exception=True)
         
-    #     if provider.storage_limit_gb:
-    #         usage_gb = (total_size or 0) / (1024 * 1024 * 1024)
-    #         usage_data["usage_percentage"] = round((usage_gb / provider.storage_limit_gb) * 100, 2)
+        # Query objects for this provider
+        query = select(func.sum(Object.size_bytes), func.count(Object.id)).where(
+            and_(Object.user_id == user_id, Object.provider_id == provider_id)
+        )
         
-    #     return usage_data
+        result = await self.db.execute(query)
+        total_size, total_count = result.first()
+        
+        usage_data = {
+            "provider_id": provider_id,
+            "provider_name": provider.name,
+            "total_size_bytes": total_size or 0,
+            "total_objects": total_count or 0,
+            "total_size_mb": round((total_size or 0) / (1024 * 1024), 2),
+            "total_size_gb": round((total_size or 0) / (1024 * 1024 * 1024), 2),
+            "storage_limit_gb": provider.storage_limit_gb,
+            "usage_percentage": None
+        }
+        
+        if provider.storage_limit_gb:
+            usage_gb = (total_size or 0) / (1024 * 1024 * 1024)
+            usage_data["usage_percentage"] = round((usage_gb / provider.storage_limit_gb) * 100, 2)
+        
+        return usage_data

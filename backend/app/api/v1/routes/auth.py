@@ -19,10 +19,10 @@ async def login(
     """User login"""
     auth_service = AuthService(db)
     result = await auth_service.authenticate(request.email, request.password)
-    
+
     # Convert user to schema
     user_data = UserResponse.from_orm(result["user"])
-    
+
     return APIResponse(
         status=True,
         message="Login successful",
@@ -44,7 +44,7 @@ async def refresh_token(
     """Refresh access token"""
     auth_service = AuthService(db)
     result = await auth_service.refresh_token(request.refresh_token)
-    
+
     return APIResponse(
         status=True,
         message="Token refreshed successfully",
