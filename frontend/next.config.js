@@ -4,13 +4,9 @@ const nextConfig = {
   output: 'standalone',
   telemetry: false,
   
-  // Disable Turbopack for production builds (use webpack)
-  experimental: {
-    turbo: false,
-  },
-  
-  // Ensure path aliases work in production
-  webpack: (config, { isServer }) => {
+  // Force webpack instead of turbopack
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // Ensure path aliases work
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': require('path').resolve(__dirname, 'src'),
