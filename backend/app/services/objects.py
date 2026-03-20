@@ -222,6 +222,40 @@ class ObjectService:
             "total_pages": total_pages
         }
 
+    async def get_user_stats(self, user_id: UUID) -> Dict[str, Any]:
+        """Get aggregate statistics for user's objects natively via PostgreSQL"""
+        query = select(
+            Object.content_type,
+            func.count(Object.id).label('count'),
+            func.sum(Object.size_bytes).label('size')
+        ).where(Object.user_id == user_id).group_by(Object.content_type)
+        
+        result = await self.db.execute(query)
+        rows = result.all()
+        
+        total_count = 0
+        total_size = 0
+        by_type = []
+        
+        for row in rows:
+            content_type = row.content_type or 'unknown'
+            count = row.count or 0
+            size = row.size or 0
+            
+            total_count += count
+            total_size += size
+            by_type.append({
+                "content_type": content_type,
+                "count": count,
+                "size_bytes": size
+            })
+            
+        return {
+            "total_count": total_count,
+            "total_size_bytes": total_size,
+            "by_type": by_type
+        }
+
     async def get_object(self, user_id: UUID, object_id: UUID) -> Object:
         """Get object by ID"""
         query = select(Object).where(

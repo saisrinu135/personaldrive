@@ -74,18 +74,11 @@ const PageLayout: React.FC<PageLayoutProps> = ({
         {sidebar && (
           <>
             {/* Desktop Sidebar */}
-            <motion.aside
-              animate={{
-                width: sidebarCollapsed ? '4rem' : '16rem',
-              }}
-              transition={{
-                type: 'spring',
-                stiffness: 300,
-                damping: 30,
-              }}
+            <aside
               className={cn(
                 'hidden lg:flex flex-col bg-card border-r border-border',
-                'transition-all duration-300 ease-in-out'
+                'transition-[width] duration-300 ease-in-out overflow-hidden',
+                sidebarCollapsed ? 'w-16' : 'w-64'
               )}
               aria-label="Sidebar navigation"
             >
@@ -95,7 +88,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
                   onToggle: toggleSidebarCollapse,
                 })}
               </div>
-            </motion.aside>
+            </aside>
 
             {/* Mobile Sidebar */}
             <AnimatePresence>

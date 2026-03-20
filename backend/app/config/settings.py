@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     # App
     APP_NAME: str = "CloudVault"
     APP_VERSION: str = "1.0.0"
-    DEBUG: bool = True
+    DEBUG: bool = False
 
     # Database
     POSTGRES_USER: str = os.getenv("POSTGRES_USER", "cloudstorage_user")

@@ -82,7 +82,7 @@ export default function LoginPage() {
       // Redirect will happen via useEffect when isAuthenticated becomes true
     } catch (err) {
       // Error is handled by AuthContext and displayed via error state
-      console.error('Login failed:', err);
+      // Removing console.error to satisfy ESLint no-console
     } finally {
       setIsSubmitting(false);
     }

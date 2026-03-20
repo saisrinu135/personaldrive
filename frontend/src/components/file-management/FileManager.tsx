@@ -9,6 +9,7 @@ import {
   List, 
   Search,
   RefreshCw,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -21,9 +22,11 @@ import {
   listFiles, 
   uploadFile,
 } from '@/services/file.service';
+import { Provider } from '@/types/provider.types';
 
 export interface FileManagerProps {
   providerId: string;
+  providers?: Provider[];
   initialPath?: string;
   className?: string;
 }
@@ -32,6 +35,7 @@ type ViewMode = 'grid' | 'list';
 
 export const FileManager: React.FC<FileManagerProps> = ({
   providerId,
+  providers,
   initialPath = '',
   className = '',
 }) => {
@@ -46,10 +50,9 @@ export const FileManager: React.FC<FileManagerProps> = ({
 
   // Load all files
   const loadFiles = useCallback(async () => {
-    if (!providerId) return;
     setLoading(true);
     try {
-      const response = await listFiles({ providerId });
+      const response = await listFiles(providerId ? { providerId } : {});
       
       // Convert API response to FileItem format
       const fileItems: FileItem[] = response.objects.map(file => ({
@@ -141,7 +144,6 @@ export const FileManager: React.FC<FileManagerProps> = ({
           <Button
             variant="primary"
             onClick={() => setShowUploader(!showUploader)}
-            disabled={!providerId}
             icon={<Upload className="w-4 h-4" />}
           >
             Upload Files
@@ -151,35 +153,36 @@ export const FileManager: React.FC<FileManagerProps> = ({
 
       {/* File uploader */}
       <AnimatePresence>
-        {showUploader && providerId && (
+        {showUploader && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <FileUploader
-              providerId={providerId}
-              onUpload={handleFileUpload}
-              multiple={true}
-            />
+            <Card className="p-4 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-lg">Upload Files</h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setShowUploader(false)}
+                  className="p-1 h-auto"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <FileUploader 
+                providerId={providerId}
+                providers={providers}
+                onUpload={handleFileUpload} 
+              />
+            </Card>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Empty state for no provider */}
-      {!providerId ? (
-        <Card className="text-center py-12">
-          <FolderOpen className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-            No Storage Provider Selected
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Please configure a storage provider to manage your files
-          </p>
-        </Card>
-      ) : (
-        <div className="space-y-4 min-h-[400px]">
+      <div className="space-y-4 min-h-[400px]">
           {/* Enhanced search component */}
           <FileSearch
             files={files}
@@ -222,8 +225,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
                 : 'No files uploaded yet'
             }
           />
-        </div>
-      )}
+      </div>
     </div>
   );
 };

@@ -103,6 +103,10 @@ def setup_logging():
         logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
         logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
+    # Force AWS/S3 dependencies to only emit ERRORs to clear up the terminal
+    for noisy_logger in ["boto3", "botocore", "urllib3", "s3transfer"]:
+        logging.getLogger(noisy_logger).setLevel(logging.ERROR)
+
 def get_logger(name: str) -> logging.Logger:
     """Get a logger instance with the specified name"""
     return logging.getLogger(name)

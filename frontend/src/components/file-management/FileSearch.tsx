@@ -198,8 +198,6 @@ export const FileSearch: React.FC<FileSearchProps> = ({
 
   // Perform search and filtering
   const searchResults = useMemo((): SearchResult[] => {
-    setIsSearching(true);
-    
     let results: SearchResult[] = files
       .filter(file => filterByType(file, filters.fileType))
       .filter(file => filterBySize(file, filters.sizeRange))
@@ -223,14 +221,15 @@ export const FileSearch: React.FC<FileSearchProps> = ({
       results = results.sort((a, b) => b.matchScore - a.matchScore);
     }
     
-    setTimeout(() => setIsSearching(false), 100);
-    
     return results;
   }, [files, searchQuery, filters, calculateMatchScore, highlightMatches, filterByType, filterBySize, filterByDate, sortFiles]);
 
   // Update search results when they change
   useEffect(() => {
+    setIsSearching(true);
     onSearchResults(searchResults);
+    const timeout = setTimeout(() => setIsSearching(false), 100);
+    return () => clearTimeout(timeout);
   }, [searchResults, onSearchResults]);
 
   // Clear search

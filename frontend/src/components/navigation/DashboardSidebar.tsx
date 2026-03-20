@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Folder, HardDrive, Settings, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DashboardSidebarProps {
   collapsed?: boolean;
@@ -23,29 +24,31 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   onToggle,
 }) => {
   const pathname = usePathname();
+  const { logout } = useAuth();
 
   return (
     <div className="flex flex-col h-full py-4 text-foreground">
       {/* Brand area */}
-      <div className={cn("flex items-center mb-8 px-4", collapsed ? "justify-center" : "justify-between")}>
-        <div className="flex items-center space-x-2">
-          <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-            <span className="text-primary-foreground font-bold text-sm text-white">CS</span>
-          </div>
-          {!collapsed && <span className="font-semibold text-lg flex-shrink-0">CloudStore</span>}
-        </div>
+      <div className={cn("flex items-center mb-8 px-4 h-12 mt-2", collapsed ? "justify-center" : "justify-between")}>
+        {!collapsed && (
+          <Link href="/dashboard" className="flex items-center space-x-2 select-none">
+            <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-primary-foreground font-bold text-sm text-white">CS</span>
+            </div>
+            <span className="font-semibold text-lg flex-shrink-0">CloudStore</span>
+          </Link>
+        )}
         
         {onToggle && !collapsed && (
           <Button variant="ghost" size="sm" onClick={onToggle} className="p-1 h-auto text-muted-foreground lg:flex hidden">
             <ChevronLeft className="h-4 w-4" />
           </Button>
         )}
+
         {onToggle && collapsed && (
-          <div className="absolute -right-3 top-6 bg-card border rounded-full hidden lg:block">
-             <Button variant="ghost" size="sm" onClick={onToggle} className="p-1 h-auto rounded-full w-6">
-                <ChevronRight className="h-4 w-4" />
-             </Button>
-          </div>
+          <Button variant="ghost" size="sm" onClick={onToggle} className="p-2 h-auto text-muted-foreground lg:flex hidden mx-auto" aria-label="Expand sidebar">
+            <ChevronRight className="h-5 w-5" />
+          </Button>
         )}
       </div>
 
@@ -76,18 +79,18 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       </nav>
 
       {/* Bottom actions */}
-      <div className="mt-auto px-2 pt-4 border-t border-border">
-        <Link
-          href="/"
+      <div className="mt-auto px-2 pt-4 border-t border-border pb-4">
+        <button
+          onClick={() => logout()}
           className={cn(
-            "flex items-center px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors",
+            "w-full flex items-center px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors",
             collapsed ? "justify-center" : "justify-start"
           )}
           title={collapsed ? "Log Out" : undefined}
         >
-          <LogOut className={cn("flex-shrink-0", collapsed ? "h-6 w-6" : "mr-3 h-5 w-5")} />
+          <LogOut className={cn("flex-shrink-0", collapsed ? "h-6 w-6 border-0" : "mr-3 h-5 w-5 border-0")} />
           {!collapsed && <span>Sign Out</span>}
-        </Link>
+        </button>
       </div>
     </div>
   );

@@ -21,6 +21,7 @@ export interface FileItem {
   thumbnail?: string;
   isFolder?: boolean;
   folderPath?: string;
+  providerId?: string;
 }
 
 // Folder Management Types

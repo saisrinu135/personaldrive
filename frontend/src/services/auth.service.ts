@@ -41,7 +41,10 @@ export const register = async (name: string, email: string, password: string): P
 
 export const logout = async (): Promise<void> => {
   try {
-    await axiosInstance.post('/api/v1/auth/logout');
+    const refreshToken = getRefreshToken();
+    await axiosInstance.post('/api/v1/auth/logout', {
+      refresh_token: refreshToken
+    });
   } catch (error) {
     // Log the error but don't throw - we still want to clear tokens locally
     console.warn('Logout API call failed:', error);

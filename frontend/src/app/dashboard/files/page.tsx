@@ -64,26 +64,25 @@ export default function FilesPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Provider Selector (If user has multiple providers) */}
-      {providers.length > 1 && (
-        <div className="flex items-center space-x-2 bg-card p-3 rounded-lg border border-border shadow-sm">
-          <span className="text-sm font-medium text-muted-foreground">Active Storage:</span>
-          <select 
-            value={providerId}
-            onChange={(e) => setProviderId(e.target.value)}
-            className="flex-1 max-w-xs px-3 py-1.5 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            {providers.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.provider_name} {p.is_active ? '(Active)' : '(Inactive)'}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      {/* Provider Selector (Always show) */}
+      <div className="flex items-center space-x-2 bg-card p-3 rounded-lg border border-border shadow-sm">
+        <span className="text-sm font-medium text-muted-foreground">Active Storage:</span>
+        <select 
+          value={providerId}
+          onChange={(e) => setProviderId(e.target.value)}
+          className="flex-1 max-w-xs px-3 py-1.5 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <option value="">All Storage Providers</option>
+          {providers.map(p => (
+            <option key={p.id} value={p.id}>
+              {p.provider_name} {p.is_active ? '' : '(Inactive)'}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Main File Manager */}
-      <FileManager providerId={providerId} />
+      <FileManager providerId={providerId} providers={providers} />
     </div>
   );
 }

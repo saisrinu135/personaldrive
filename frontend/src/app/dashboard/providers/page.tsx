@@ -5,8 +5,9 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { listProviders } from '@/services/provider.service';
 import { Provider } from '@/types/provider.types';
-import { HardDrive, Plus, Loader2, Key, Database, Server } from 'lucide-react';
+import { HardDrive, Plus, Loader2 } from 'lucide-react';
 import { AddProviderDialog } from '@/components/providers/AddProviderDialog';
+import { ProviderCard } from '@/components/providers/ProviderCard';
 
 export default function ProvidersPage() {
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -50,49 +51,7 @@ export default function ProvidersPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {providers.map((provider) => (
-          <Card key={provider.id} className="p-6 border-l-4 border-l-primary flex flex-col h-full">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  {provider.provider_type?.toLowerCase().includes('s3') ? (
-                    <Database className="w-6 h-6 text-primary" />
-                  ) : (
-                    <Server className="w-6 h-6 text-primary" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg leading-tight">{provider.provider_name}</h3>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    provider.is_active 
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                      : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
-                  }`}>
-                    {provider.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3 flex-1">
-              <div className="flex items-center text-sm">
-                <span className="text-muted-foreground w-20">Type:</span>
-                <span className="font-medium text-foreground">{provider.provider_type}</span>
-              </div>
-              <div className="flex items-center text-sm">
-                <span className="text-muted-foreground w-20">Created:</span>
-                <span className="text-foreground">
-                  {new Date(provider.created_at).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-border flex justify-end space-x-2">
-              <Button variant="ghost" size="sm">Edit</Button>
-              <Button variant="outline" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 shadow-none border-red-200 dark:border-red-900/50">
-                Remove
-              </Button>
-            </div>
-          </Card>
+          <ProviderCard key={provider.id} provider={provider} onRefresh={fetchProviders} />
         ))}
 
         {providers.length === 0 && (

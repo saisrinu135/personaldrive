@@ -56,6 +56,16 @@ export interface FileListResponse {
   total_pages: number;
 }
 
+export interface UserStatsResponse {
+  total_count: number;
+  total_size_bytes: number;
+  by_type: {
+    content_type: string;
+    count: number;
+    size_bytes: number;
+  }[];
+}
+
 // ─── Upload ──────────────────────────────────────────────────────────────────
 
 /**
@@ -166,7 +176,15 @@ export const getFileMetadata = async (fileId: string): Promise<FileUploadRespons
   return response.data.data;
 };
 
-// ─── Download ────────────────────────────────────────────────────────────────
+/**
+ * Get aggregate statistics for the user's files natively parsed by PostgreSQL
+ */
+export const getUserStats = async (): Promise<UserStatsResponse> => {
+  const response = await axiosInstance.get<APIResponse<UserStatsResponse>>('/api/v1/objects/stats');
+  return response.data.data;
+};
+
+// ─── Utility ─────────────────────────────────────────────────────────────────
 
 /**
  * Download a file and trigger a browser download.

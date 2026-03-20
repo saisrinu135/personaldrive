@@ -13,7 +13,9 @@ import {
   Archive,
   MoreVertical,
   Calendar,
-  HardDrive
+  HardDrive,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -21,6 +23,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/base/Toast';
 import { FileItem } from '@/types/file.types';
 import { downloadFile, deleteFile } from '@/services/file.service';
+import axiosInstance from '@/lib/axios';
 
 export interface FileListProps {
   files: FileItem[];
@@ -352,31 +355,32 @@ const FileGridItem: React.FC<FileItemProps> = ({
   formatFileSize,
   formatDate,
 }) => {
+  const [previewActive, setPreviewActive] = useState(false);
+  const isPreviewable = file.type.startsWith('image/') && file.size < 5 * 1024 * 1024;
+
   return (
     <Card className="group relative overflow-hidden hover:shadow-lg transition-all duration-200">
       {/* Thumbnail or icon */}
       <div className="aspect-square bg-gray-100 dark:bg-gray-800 flex items-center justify-center relative overflow-hidden">
-        {file.thumbnail ? (
-          <img
-            src={file.thumbnail}
-            alt={file.name}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              // Fallback to icon if thumbnail fails to load
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              target.nextElementSibling?.classList.remove('hidden');
-            }}
-          />
-        ) : null}
-        <div className={`${file.thumbnail ? 'hidden' : 'flex'} items-center justify-center w-full h-full text-gray-400 dark:text-gray-500`}>
-          <div className="text-4xl">
-            {getFileIcon(file)}
-          </div>
-        </div>
+        <ImageThumbnailPreview 
+          file={file} 
+          fallbackIcon={getFileIcon(file)} 
+          className="w-full h-full object-cover"
+          active={previewActive}
+        />
         
         {/* Action overlay */}
         <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center space-x-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); setPreviewActive(true); }}
+            disabled={!isPreviewable || previewActive}
+            title={!isPreviewable ? "Preview not available for this file" : "View Image"}
+            className="bg-white/90 text-gray-900 hover:bg-white"
+          >
+            {isPreviewable && !previewActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+          </Button>
           <Button
             variant="secondary"
             size="sm"
@@ -423,27 +427,20 @@ const FileListItem: React.FC<FileItemProps> = ({
   formatFileSize,
   formatDate,
 }) => {
+  const [previewActive, setPreviewActive] = useState(false);
+  const isPreviewable = file.type.startsWith('image/') && file.size < 5 * 1024 * 1024;
+
   return (
     <Card className="group hover:shadow-md transition-all duration-200" padding="sm">
       <div className="flex items-center space-x-4">
         {/* Thumbnail or icon */}
         <div className="flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center overflow-hidden">
-          {file.thumbnail ? (
-            <img
-              src={file.thumbnail}
-              alt={file.name}
-              className="w-full h-full object-cover rounded-lg"
-              onError={(e) => {
-                // Fallback to icon if thumbnail fails to load
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                target.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
-          ) : null}
-          <div className={`${file.thumbnail ? 'hidden' : 'flex'} items-center justify-center text-gray-400 dark:text-gray-500`}>
-            {getFileIcon(file)}
-          </div>
+          <ImageThumbnailPreview 
+            file={file} 
+            fallbackIcon={getFileIcon(file)} 
+            className="w-full h-full object-cover rounded-lg"
+            active={previewActive}
+          />
         </div>
         
         {/* File info */}
@@ -468,6 +465,16 @@ const FileListItem: React.FC<FileItemProps> = ({
           <Button
             variant="ghost"
             size="sm"
+            onClick={(e) => { e.stopPropagation(); setPreviewActive(true); }}
+            disabled={!isPreviewable || previewActive}
+            title={!isPreviewable ? "Preview not available" : "View Image"}
+            className="h-8 w-8 p-0"
+          >
+            {isPreviewable && !previewActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => onDownload(file)}
             disabled={file.isDownloading || file.isDeleting}
             loading={file.isDownloading}
@@ -488,6 +495,94 @@ const FileListItem: React.FC<FileItemProps> = ({
         </div>
       </div>
     </Card>
+  );
+};
+
+// Authorized Thumbnail Fetcher
+const ImageThumbnailPreview: React.FC<{ 
+  file: FileWithActions, 
+  fallbackIcon: React.ReactNode, 
+  className?: string,
+  active?: boolean 
+}> = ({ file, fallbackIcon, className = "w-full h-full object-cover", active = false }) => {
+  const [imgSrc, setImgSrc] = useState<string | null>(file.thumbnail || null);
+  const [hasError, setHasError] = useState(false);
+  
+  React.useEffect(() => {
+    if (file.thumbnail) return;
+    if (!active) return; // Prevent bandwidth drain until user clicks View
+    
+    
+    let isMounted = true;
+    let localUrl = '';
+    
+    // Only attempt to generate thumbnail for images smaller than 5MB
+    if (file.type.startsWith('image/') && file.size < 5 * 1024 * 1024) {
+      const loadThumbnail = async () => {
+        try {
+          const cacheName = 'cloud-storage-thumbnails';
+          const cacheUrl = `/api/v1/objects/${file.id}/download`;
+          
+          if ('caches' in window) {
+            const cache = await caches.open(cacheName);
+            const cachedResponse = await cache.match(cacheUrl);
+            if (cachedResponse && isMounted) {
+              const blob = await cachedResponse.blob();
+              localUrl = URL.createObjectURL(blob);
+              setImgSrc(localUrl);
+              return;
+            }
+          }
+
+          const response = await axiosInstance.get(cacheUrl, {
+            responseType: 'blob',
+            timeout: 10000,
+          });
+          
+          if (isMounted && response.data) {
+            if ('caches' in window) {
+              const cache = await caches.open(cacheName);
+              const webResponse = new Response(response.data);
+              await cache.put(cacheUrl, webResponse);
+            }
+            localUrl = URL.createObjectURL(response.data);
+            setImgSrc(localUrl);
+          }
+        } catch (error) {
+          if (isMounted) setHasError(true);
+        }
+      };
+      
+      loadThumbnail();
+    } else {
+      setHasError(true);
+    }
+    
+    return () => {
+      isMounted = false;
+      if (localUrl) {
+        URL.revokeObjectURL(localUrl);
+      }
+    };
+  }, [file.id, file.type, file.size, file.thumbnail, active]); 
+  
+  if (imgSrc && !hasError) {
+    return (
+      <img
+        src={imgSrc}
+        alt={file.name}
+        className={className}
+        onError={() => setHasError(true)}
+      />
+    );
+  }
+  
+  return (
+    <div className="flex items-center justify-center w-full h-full text-gray-400 dark:text-gray-500">
+      <div className={className.includes('rounded-lg') ? "" : "text-4xl"}>
+        {fallbackIcon}
+      </div>
+    </div>
   );
 };
 

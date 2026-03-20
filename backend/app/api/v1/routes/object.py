@@ -83,6 +83,22 @@ async def list_objects(
     )
 
 
+@router.get("/stats", response_model=APIResponse)
+async def get_object_stats(
+    current_user: CurrentUser,
+    db: Database
+):
+    """Get user storage statistics natively via PostgreSQL"""
+    service = ObjectService(db)
+    stats = await service.get_user_stats(current_user.id)
+
+    return APIResponse(
+        status=True,
+        message="Storage statistics retrieved successfully",
+        data=stats
+    )
+
+
 @router.get("/{object_id}", response_model=APIResponse)
 async def get_object(
     object_id: UUID,

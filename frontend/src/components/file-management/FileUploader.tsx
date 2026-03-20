@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/base/Toast';
 import { uploadFile } from '@/services/file.service';
 import { UploadProgress } from '@/types/file.types';
+import { Provider } from '@/types/provider.types';
 
 export interface FileUploaderProps {
   accept?: string[];
@@ -17,6 +18,7 @@ export interface FileUploaderProps {
   onProgress?: (progress: UploadProgress) => void;
   disabled?: boolean;
   providerId: string;
+  providers?: Provider[];
   folderPath?: string;
   className?: string;
 }
@@ -46,12 +48,22 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   onProgress,
   disabled = false,
   providerId,
+  providers,
   folderPath = '',
   className = '',
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<FileWithProgress[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [localProviderId, setLocalProviderId] = useState<string>(
+    providerId || (providers && providers.length > 0 ? providers[0].id : '')
+  );
+  
+  // Keep local synced with global prop if it changes and isn't empty
+  React.useEffect(() => {
+    if (providerId) setLocalProviderId(providerId);
+  }, [providerId]);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addToast } = useToast();
 
@@ -151,7 +163,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         const { file } = fileWithProgress;
         
         await uploadFile(file, {
-          providerId,
+          providerId: localProviderId,
           folderPath,
           onProgress: (progress) => {
             // Update progress for this specific file
@@ -203,7 +215,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
     } finally {
       setIsUploading(false);
     }
-  }, [disabled, isUploading, validateFile, onUpload, providerId, folderPath, onProgress, addToast]);
+  }, [disabled, isUploading, validateFile, onUpload, localProviderId, folderPath, onProgress, addToast]);
 
   // Drag and drop handlers
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -325,6 +337,24 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
           disabled={disabled || isUploading}
         />
       </Card>
+
+      {/* Provider Selector if "All Providers" is currently active globally */}
+      {!providerId && providers && providers.length > 0 && (
+        <div className="p-4 mt-2 border border-border bg-card rounded-xl text-sm shadow-sm flex flex-col sm:flex-row sm:items-center gap-4">
+          <label className="font-semibold text-foreground whitespace-nowrap">
+            Destination:
+          </label>
+          <select 
+            value={localProviderId} 
+            onChange={e => setLocalProviderId(e.target.value)}
+            className="flex-1 w-full p-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            {providers.map(p => (
+              <option key={p.id} value={p.id}>{p.provider_name} {p.is_active ? '' : '(Inactive)'}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Upload progress */}
       <AnimatePresence>

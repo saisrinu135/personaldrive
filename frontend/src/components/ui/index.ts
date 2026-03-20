@@ -14,3 +14,5 @@ export {
   cardVariants 
 } from './Card';
 export type { CardProps } from './Card';
+
+export * from './Switch';

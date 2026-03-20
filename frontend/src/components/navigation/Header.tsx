@@ -114,7 +114,7 @@ const Header: React.FC<HeaderProps> = ({
 
           {/* Logo */}
           <Link 
-            href="/" 
+            href="/dashboard" 
             className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm"
           >
             <motion.div

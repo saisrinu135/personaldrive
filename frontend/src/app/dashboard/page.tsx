@@ -10,7 +10,7 @@ import {
   type StorageDistribution,
 } from '@/components/dashboard';
 import { FileMetadata } from '@/types/file.types';
-import { listFiles, toFileMetadata } from '@/services/file.service';
+import { listFiles, toFileMetadata, getUserStats } from '@/services/file.service';
 import { listProviders } from '@/services/provider.service';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
@@ -45,22 +45,19 @@ export default function DashboardOverviewPage() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        // 1. Get providers first since listFiles might need a specific provider ID eventually.
-        // For dashboard overview, we can just fetch files for all providers if the API supports it,
-        // or by default it returns the user's files.
-        const fileListResponse = await listFiles({ limit: 100 }); // fetch large amount to calculate overview
-        const apiFiles = fileListResponse.objects;
         
-        // 2. Parse stats
+        // 1. Fetch exactly 5 recent files for the list explicitly
+        const fileListResponse = await listFiles({ limit: 5 }); 
+        const apiFiles = fileListResponse.objects || [];
         const files = apiFiles.map(toFileMetadata);
+        setRecentFiles(files);
         
-        // Sort by date desc
-        const sortedFiles = [...files].sort((a, b) => b.uploadDate.getTime() - a.uploadDate.getTime());
-        setRecentFiles(sortedFiles.slice(0, 5));
+        // 2. Fetch global storage statistics computed natively by PostgreSQL
+        const stats = await getUserStats();
         
-        setTotalFiles(files.length);
+        setTotalFiles(stats.total_count);
+        setTotalStorageUsed(stats.total_size_bytes);
         
-        let totalSize = 0;
         const distribution: StorageDistribution = {
           documents: { size: 0, count: 0, color: '#3b82f6' },
           images: { size: 0, count: 0, color: '#10b981' },
@@ -72,38 +69,36 @@ export default function DashboardOverviewPage() {
         
         const breakdown = { documents: 0, images: 0, videos: 0, audio: 0, others: 0 };
 
-        for (const file of files) {
-          totalSize += file.size || 0;
-          const type = file.type?.toLowerCase() || '';
+        for (const stat of stats.by_type) {
+          const type = stat.content_type?.toLowerCase() || '';
           
           if (type.startsWith('image/')) {
-            distribution.images.size += file.size;
-            distribution.images.count++;
-            breakdown.images++;
+            distribution.images.size += stat.size_bytes;
+            distribution.images.count += stat.count;
+            breakdown.images += stat.count;
           } else if (type.startsWith('video/')) {
-            distribution.videos.size += file.size;
-            distribution.videos.count++;
-            breakdown.videos++;
+            distribution.videos.size += stat.size_bytes;
+            distribution.videos.count += stat.count;
+            breakdown.videos += stat.count;
           } else if (type.startsWith('audio/')) {
-            distribution.audio.size += file.size;
-            distribution.audio.count++;
-            breakdown.audio++;
+            distribution.audio.size += stat.size_bytes;
+            distribution.audio.count += stat.count;
+            breakdown.audio += stat.count;
           } else if (type.includes('pdf') || type.includes('document') || type.includes('text')) {
-            distribution.documents.size += file.size;
-            distribution.documents.count++;
-            breakdown.documents++;
+            distribution.documents.size += stat.size_bytes;
+            distribution.documents.count += stat.count;
+            breakdown.documents += stat.count;
           } else if (type.includes('zip') || type.includes('rar') || type.includes('archive')) {
-            distribution.archives.size += file.size;
-            distribution.archives.count++;
-            breakdown.others++;
+            distribution.archives.size += stat.size_bytes;
+            distribution.archives.count += stat.count;
+            breakdown.others += stat.count;
           } else {
-            distribution.others.size += file.size;
-            distribution.others.count++;
-            breakdown.others++;
+            distribution.others.size += stat.size_bytes;
+            distribution.others.count += stat.count;
+            breakdown.others += stat.count;
           }
         }
         
-        setTotalStorageUsed(totalSize);
         setStorageDistribution(distribution);
         setFileTypeBreakdown(breakdown);
         
