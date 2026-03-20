@@ -56,6 +56,21 @@ services:
     networks:
       - cloudstorage_network
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cloudstorage_frontend
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - cloudstorage_network
+
 volumes:
   postgres_data:
   pgadmin_data:
