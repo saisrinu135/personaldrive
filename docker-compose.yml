@@ -44,8 +44,6 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    volumes:
-      - ./backend:/app
     ports:
       - "8000:8000"
     depends_on:
