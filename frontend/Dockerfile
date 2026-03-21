@@ -18,8 +18,8 @@ RUN npm run build
 
 # To run as a true standalone application using the `.next/standalone/server.js` output, 
 # we need to ensure the public and static files are inside the standalone directory structure.
-RUN cp -r public .next/standalone/ && \
-    cp -r .next/static .next/standalone/.next/
+RUN test -d public && cp -r public .next/standalone/ || true
+RUN test -d .next/static && cp -r .next/static .next/standalone/.next/ || true
 
 # Set production environment variables
 ENV NODE_ENV production
