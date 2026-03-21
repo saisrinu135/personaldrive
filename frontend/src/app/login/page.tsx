@@ -33,13 +33,12 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Clear errors when form data changes
+  // Clear errors only when form data explicitly changes
   useEffect(() => {
-    if (error) {
-      clearError();
-    }
     setFormErrors({});
-  }, [formData, error, clearError]);
+    if (error) clearError();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData]);
 
   const validationRules: Record<keyof LoginFormData, ValidationRule[]> = {
     email: [

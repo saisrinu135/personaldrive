@@ -34,13 +34,12 @@ export default function RegisterPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Clear errors when form data changes
+  // Clear errors only when form data explicitly changes
   useEffect(() => {
-    if (error) {
-      clearError();
-    }
     setFormErrors({});
-  }, [formData, error, clearError]);
+    if (error) clearError();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData]);
 
   const validationRules: Record<keyof RegisterFormData, ValidationRule[]> = {
     name: [
@@ -54,12 +53,7 @@ export default function RegisterPage() {
     ],
     password: [
       { type: 'required', message: 'Password is required' },
-      { type: 'minLength', value: 8, message: 'Password must be at least 8 characters' },
-      { 
-        type: 'custom', 
-        value: (password: string) => /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password),
-        message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number'
-      },
+      { type: 'minLength', value: 6, message: 'Password must be at least 6 characters' },
     ],
     confirmPassword: [
       { type: 'required', message: 'Please confirm your password' },
