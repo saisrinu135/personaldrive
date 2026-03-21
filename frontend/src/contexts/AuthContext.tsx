@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { AuthState, AuthContextType, AuthAction } from '@/types/auth-state.types';
 import { User } from '@/types/auth.types';
 import * as authService from '@/services/auth.service';
@@ -83,6 +84,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const router = useRouter();
 
   // Initialize authentication state from storage
   useEffect(() => {
@@ -167,6 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = (): void => {
     authService.logout().finally(() => {
       dispatch({ type: 'AUTH_LOGOUT' });
+      router.push('/login');
     });
   };
 
