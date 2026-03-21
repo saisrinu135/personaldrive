@@ -16,10 +16,10 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# To run as a true standalone application using the `.next/standalone/server.js` output, 
-# we need to ensure the public and static files are inside the standalone directory structure.
-RUN test -d public && cp -r public .next/standalone/ || true
-RUN test -d .next/static && cp -r .next/static .next/standalone/.next/ || true
+# To run as a true standalone application, the server.js file expects
+# the public and .next/static folders to be locally available inside its directory.
+RUN test -d public && mkdir -p .next/standalone/public && cp -a public/. .next/standalone/public/ || true
+RUN test -d .next/static && mkdir -p .next/standalone/.next/static && cp -a .next/static/. .next/standalone/.next/static/ || true
 
 # Set production environment variables
 ENV NODE_ENV production
@@ -29,5 +29,8 @@ ENV HOSTNAME "0.0.0.0"
 # Expose Next.js port
 EXPOSE 3000
 
+# Change working directory so server.js inherently finds its static files
+WORKDIR /app/.next/standalone
+
 # Start the optimized standalone Next.js application
-CMD ["node", ".next/standalone/server.js"]
+CMD ["node", "server.js"]
