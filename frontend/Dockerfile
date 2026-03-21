@@ -1,48 +1,33 @@
-# Frontend Dockerfile
-FROM node:22-alpine AS base
+# Frontend Dockerfile - Single Stage Standalone
+FROM node:22-alpine
 
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
+# Install native dependencies if needed
+RUN apk add --no-cache libc6-compat
+
+# Install node dependencies
 COPY package.json package-lock.json* ./
 RUN npm ci
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Copy all application files
 COPY . .
 
 # Build the application
 RUN npm run build
 
-# Production image, copy all the files and run next
-FROM base AS runner
-WORKDIR /app
+# To run as a true standalone application using the `.next/standalone/server.js` output, 
+# we need to ensure the public and static files are inside the standalone directory structure.
+RUN cp -r public .next/standalone/ && \
+    cp -r .next/static .next/standalone/.next/
 
+# Set production environment variables
 ENV NODE_ENV production
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
-# Automatically leverage output traces to reduce image size
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
-
-EXPOSE 3000
-
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-CMD ["node", "server.js"]
+# Expose Next.js port
+EXPOSE 3000
+
+# Start the optimized standalone Next.js application
+CMD ["node", ".next/standalone/server.js"]
