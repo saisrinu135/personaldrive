@@ -69,7 +69,8 @@ axiosInstance.interceptors.request.use(
     // Skip proactive refresh for auth endpoints to avoid loops
     const isAuthEndpoint = config.url?.includes('/auth/login') ||
                            config.url?.includes('/auth/refresh') ||
-                           config.url?.includes('/auth/logout');
+                           config.url?.includes('/auth/logout') ||
+                           config.url?.includes('/users/register');
 
     if (!isAuthEndpoint) {
       const accessToken = getAccessToken();
@@ -142,10 +143,10 @@ axiosInstance.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    // Do not attempt to refresh if the request was a login attempt
-    const isLoginRequest = originalRequest.url?.includes('/auth/login');
+    // Do not attempt to refresh if the request was a login attempt or register attempt
+    const isAuthRequest = originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/users/register');
 
-    if (error.response?.status === 401 && !originalRequest._retry && !isLoginRequest) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject, originalRequest });

@@ -69,7 +69,7 @@ export default function RegisterPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent | React.MouseEvent) => {
     e.preventDefault();
     
     // Validate form
@@ -232,7 +232,8 @@ export default function RegisterPage() {
             {/* Submit Button */}
             <div>
               <Button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
                 variant="primary"
                 size="lg"
                 loading={isSubmitting}

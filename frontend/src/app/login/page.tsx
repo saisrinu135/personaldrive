@@ -187,7 +187,8 @@ export default function LoginPage() {
             {/* Submit Button */}
             <div>
               <Button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
                 variant="primary"
                 size="lg"
                 loading={isSubmitting}
