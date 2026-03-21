@@ -36,8 +36,15 @@ class Settings(BaseSettings):
     # Encryption
     ENCRYPTION_KEY: str = os.getenv("ENCRYPTION_KEY")
 
-    # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    # CORS - Parses comma-separated string from .env
+    CORS_ORIGINS_STR: str = os.getenv(
+        "CORS_ORIGINS", 
+        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001"
+    )
+
+    @property
+    def CORS_ORIGINS(self) -> List[str]:
+        return [origin.strip() for origin in self.CORS_ORIGINS_STR.split(",") if origin.strip()]
 
 @lru_cache()
 def get_settings() -> Settings:
