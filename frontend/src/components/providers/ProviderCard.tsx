@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Provider } from '@/types/provider.types';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Provider, ProviderUsage } from '@/types/provider.types';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
@@ -23,6 +24,8 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({ provider, onRefresh 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const { addToast } = useToast();
+  
+  const usage = provider.usage;
 
   const handleToggle = async (checked: boolean) => {
     try {
@@ -55,6 +58,9 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({ provider, onRefresh 
       setDeleteOpen(false);
     }
   };
+
+  const limit = provider.storage_limit_gb || usage?.storage_limit_gb || 0;
+  const hasLimit = limit > 0;
 
   return (
     <>
@@ -114,6 +120,12 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({ provider, onRefresh 
             </span>
           </div>
           <div className="flex items-center text-sm">
+            <span className="text-muted-foreground font-medium w-24">Storage Limit:</span>
+            <span className="text-foreground font-medium py-0.5">
+              {hasLimit ? `${limit} GB` : 'Unlimited'}
+            </span>
+          </div>
+          <div className="flex items-center text-sm">
             <span className="text-muted-foreground font-medium w-24">Added:</span>
             <span className="text-foreground">
               {new Date(provider.created_at).toLocaleDateString(undefined, {
@@ -125,7 +137,44 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({ provider, onRefresh 
           </div>
         </div>
 
-        <div className="mt-6 pt-4 border-t border-border flex justify-end space-x-2">
+        {/* Capacity Bar Visualization */}
+        {provider.is_active && (
+          <div className="mt-4 mb-2 px-1">
+            <div className="flex justify-between items-end mb-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Capacity Usage</span>
+              <span className="text-xs font-semibold">
+                {usage ? (
+                  hasLimit 
+                    ? `${usage.total_size_gb} / ${limit} GB (${usage.usage_percentage}%)`
+                    : `${usage.total_size_gb} GB Used`
+                ) : 'Unavailable'}
+              </span>
+            </div>
+            <div className="relative h-2 w-full bg-muted/60 rounded-full overflow-hidden">
+              {usage && hasLimit && (
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(usage.usage_percentage || 0, 100)}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className={cn(
+                    "absolute top-0 left-0 h-full rounded-full shrink-0",
+                    (usage.usage_percentage || 0) > 90 ? "bg-red-500" :
+                    (usage.usage_percentage || 0) > 75 ? "bg-yellow-500" : "bg-primary"
+                  )}
+                />
+              )}
+              {usage && !hasLimit && (
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: usage.total_size_bytes > 0 ? "100%" : "0%" }}
+                  className="absolute top-0 left-0 h-full rounded-full bg-primary/40 shrink-0"
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 pt-4 border-t border-border flex justify-end space-x-2">
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="gap-1.5 px-3">
             <Edit2 className="w-3.5 h-3.5" />
             Edit

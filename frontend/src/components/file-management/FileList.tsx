@@ -24,6 +24,7 @@ import { useToast } from '@/components/base/Toast';
 import { FileItem } from '@/types/file.types';
 import { downloadFile, deleteFile } from '@/services/file.service';
 import axiosInstance from '@/lib/axios';
+import { FilePreviewModal } from './FilePreviewModal';
 
 export interface FileListProps {
   files: FileItem[];
@@ -56,6 +57,7 @@ export const FileList: React.FC<FileListProps> = ({
   const [filesWithActions, setFilesWithActions] = useState<FileWithActions[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [fileToDelete, setFileToDelete] = useState<FileWithActions | null>(null);
+  const [previewFile, setPreviewFile] = useState<FileWithActions | null>(null);
   const { addToast } = useToast();
 
   // Update files with actions when files prop changes
@@ -294,6 +296,7 @@ export const FileList: React.FC<FileListProps> = ({
                   getFileIcon={getFileIcon}
                   formatFileSize={formatFileSize}
                   formatDate={formatDate}
+                  onPreview={setPreviewFile}
                 />
               </motion.div>
             ))}
@@ -317,6 +320,7 @@ export const FileList: React.FC<FileListProps> = ({
                   getFileIcon={getFileIcon}
                   formatFileSize={formatFileSize}
                   formatDate={formatDate}
+                  onPreview={setPreviewFile}
                 />
               </motion.div>
             ))}
@@ -324,7 +328,6 @@ export const FileList: React.FC<FileListProps> = ({
         </div>
       )}
 
-      {/* Confirmation Dialog mapped independently of views */}
       <ConfirmDialog
         isOpen={!!fileToDelete}
         title="Delete File"
@@ -332,6 +335,11 @@ export const FileList: React.FC<FileListProps> = ({
         confirmText="Delete"
         onConfirm={executeDelete}
         onCancel={() => setFileToDelete(null)}
+      />
+
+      <FilePreviewModal
+        file={previewFile}
+        onClose={() => setPreviewFile(null)}
       />
     </>
   );
@@ -345,6 +353,7 @@ interface FileItemProps {
   getFileIcon: (file: FileWithActions) => React.ReactNode;
   formatFileSize: (bytes: number) => string;
   formatDate: (date: Date) => string;
+  onPreview?: (file: FileWithActions) => void;
 }
 
 const FileGridItem: React.FC<FileItemProps> = ({
@@ -354,9 +363,12 @@ const FileGridItem: React.FC<FileItemProps> = ({
   getFileIcon,
   formatFileSize,
   formatDate,
+  onPreview,
 }) => {
-  const [previewActive, setPreviewActive] = useState(false);
-  const isPreviewable = file.type.startsWith('image/') && file.size < 5 * 1024 * 1024;
+  const isPdf = file.type === 'application/pdf';
+  const isVideo = file.type.startsWith('video/');
+  const isImage = file.type.startsWith('image/');
+  const isPreviewable = isImage || isVideo || isPdf;
 
   return (
     <Card className="group relative overflow-hidden hover:shadow-lg transition-all duration-200">
@@ -366,20 +378,18 @@ const FileGridItem: React.FC<FileItemProps> = ({
           file={file} 
           fallbackIcon={getFileIcon(file)} 
           className="w-full h-full object-cover"
-          active={previewActive}
         />
         
-        {/* Action overlay */}
         <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center space-x-2">
           <Button
             variant="secondary"
             size="sm"
-            onClick={(e) => { e.stopPropagation(); setPreviewActive(true); }}
-            disabled={!isPreviewable || previewActive}
-            title={!isPreviewable ? "Preview not available for this file" : "View Image"}
+            onClick={(e) => { e.stopPropagation(); if (onPreview) onPreview(file); }}
+            disabled={!isPreviewable}
+            title={!isPreviewable ? "Preview not available for this file" : "Preview Content"}
             className="bg-white/90 text-gray-900 hover:bg-white"
           >
-            {isPreviewable && !previewActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            <Eye className="w-4 h-4" />
           </Button>
           <Button
             variant="secondary"
@@ -418,7 +428,6 @@ const FileGridItem: React.FC<FileItemProps> = ({
   );
 };
 
-// List item component
 const FileListItem: React.FC<FileItemProps> = ({
   file,
   onDownload,
@@ -426,9 +435,12 @@ const FileListItem: React.FC<FileItemProps> = ({
   getFileIcon,
   formatFileSize,
   formatDate,
+  onPreview,
 }) => {
-  const [previewActive, setPreviewActive] = useState(false);
-  const isPreviewable = file.type.startsWith('image/') && file.size < 5 * 1024 * 1024;
+  const isPdf = file.type === 'application/pdf';
+  const isVideo = file.type.startsWith('video/');
+  const isImage = file.type.startsWith('image/');
+  const isPreviewable = isImage || isVideo || isPdf;
 
   return (
     <Card className="group hover:shadow-md transition-all duration-200" padding="sm">
@@ -439,7 +451,6 @@ const FileListItem: React.FC<FileItemProps> = ({
             file={file} 
             fallbackIcon={getFileIcon(file)} 
             className="w-full h-full object-cover rounded-lg"
-            active={previewActive}
           />
         </div>
         
@@ -465,12 +476,12 @@ const FileListItem: React.FC<FileItemProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={(e) => { e.stopPropagation(); setPreviewActive(true); }}
-            disabled={!isPreviewable || previewActive}
-            title={!isPreviewable ? "Preview not available" : "View Image"}
+            onClick={(e) => { e.stopPropagation(); if (onPreview) onPreview(file); }}
+            disabled={!isPreviewable}
+            title={!isPreviewable ? "Preview not available" : "Preview Content"}
             className="h-8 w-8 p-0"
           >
-            {isPreviewable && !previewActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            <Eye className="w-4 h-4" />
           </Button>
           <Button
             variant="ghost"

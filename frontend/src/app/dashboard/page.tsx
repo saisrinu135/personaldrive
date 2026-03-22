@@ -11,7 +11,6 @@ import {
 } from '@/components/dashboard';
 import { FileMetadata } from '@/types/file.types';
 import { listFiles, toFileMetadata, getUserStats } from '@/services/file.service';
-import { listProviders } from '@/services/provider.service';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 

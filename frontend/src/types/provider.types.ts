@@ -29,6 +29,7 @@ export interface Provider {
   storage_limit_gb?: number;
   notes?: string;
   updated_at?: string;
+  usage?: ProviderUsage;
 }
 
 /**
@@ -99,4 +100,18 @@ export interface TestConnectionResponse {
  */
 export interface ListProvidersParams {
   is_active?: boolean;
+}
+
+/**
+ * Storage Usage metrics returned by the backend
+ */
+export interface ProviderUsage {
+  provider_id: string;
+  provider_name: string;
+  total_size_bytes: number;
+  total_objects: number;
+  total_size_mb: number;
+  total_size_gb: number;
+  storage_limit_gb?: number;
+  usage_percentage?: number;
 }

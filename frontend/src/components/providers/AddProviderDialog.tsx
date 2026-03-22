@@ -33,7 +33,10 @@ export const AddProviderDialog: React.FC<AddProviderDialogProps> = ({ isOpen, on
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: name === 'storage_limit_gb' ? (value === '' ? undefined : Number(value)) : value 
+    }));
     setError('');
     setSuccessMsg('');
   };
@@ -179,6 +182,11 @@ export const AddProviderDialog: React.FC<AddProviderDialogProps> = ({ isOpen, on
                     <label className="block text-sm font-medium mb-1">Endpoint URL (Optional)</label>
                     <Input name="endpoint_url" value={formData.endpoint_url} onChange={handleChange} placeholder="https://..." />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Storage Limit (GB, Optional)</label>
+                  <Input type="number" min="1" step="1" name="storage_limit_gb" value={formData.storage_limit_gb || ''} onChange={handleChange} placeholder="Leave empty for unlimited storage" />
                 </div>
               </form>
             </div>

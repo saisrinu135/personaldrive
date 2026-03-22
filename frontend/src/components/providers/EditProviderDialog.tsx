@@ -37,6 +37,7 @@ export const EditProviderDialog: React.FC<EditProviderDialogProps> = ({
         endpoint_url: provider.endpoint_url || '',
         bucket_name: provider.bucket_name || '',
         region: provider.region || '',
+        storage_limit_gb: provider.storage_limit_gb,
         // We do not pre-fill access_key and secret_key for security reasons.
         // User must re-enter them if they want to update them, or leave blank to keep existing.
         access_key: '',
@@ -49,7 +50,10 @@ export const EditProviderDialog: React.FC<EditProviderDialogProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: name === 'storage_limit_gb' ? (value === '' ? undefined : Number(value)) : value 
+    }));
     setError('');
     setSuccessMsg('');
   };
@@ -205,6 +209,11 @@ export const EditProviderDialog: React.FC<EditProviderDialogProps> = ({
                       <label className="block text-sm font-medium mb-1">Endpoint URL</label>
                       <Input name="endpoint_url" value={formData.endpoint_url} onChange={handleChange} />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Storage Limit (GB, Optional)</label>
+                    <Input type="number" min="1" step="1" name="storage_limit_gb" value={formData.storage_limit_gb || ''} onChange={handleChange} placeholder="Leave empty for unlimited storage" />
                   </div>
                 </form>
               </div>

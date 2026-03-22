@@ -7,6 +7,7 @@ import {
   TestConnectionRequest,
   TestConnectionResponse,
   ListProvidersParams,
+  ProviderUsage,
 } from '@/types/provider.types';
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
@@ -66,8 +67,23 @@ export const createProvider = async (data: CreateProviderRequest): Promise<Provi
  * List all providers for the current user.
  * Backend: GET /api/v1/providers/
  */
+/**
+ * List all providers for the current user (includes inline usage data).
+ * Backend: GET /api/v1/providers/
+ */
 export const listProviders = async (params?: ListProvidersParams): Promise<Provider[]> => {
   const response = await axiosInstance.get<APIResponse<Provider[]>>('/api/v1/providers/', {
+    params,
+  });
+  return response.data.data;
+};
+
+/**
+ * List all providers for the current user as a lightweight dropdown (omits usage calculation).
+ * Backend: GET /api/v1/providers/dropdown
+ */
+export const listProvidersDropdown = async (params?: ListProvidersParams): Promise<Provider[]> => {
+  const response = await axiosInstance.get<APIResponse<Provider[]>>('/api/v1/providers/dropdown', {
     params,
   });
   return response.data.data;
@@ -121,4 +137,13 @@ export const deactivateProvider = async (providerId: string): Promise<void> => {
  */
 export const deleteProvider = async (providerId: string): Promise<void> => {
   await axiosInstance.delete(`/api/v1/providers/${providerId}`);
+};
+
+/**
+ * Get storage usage metrics for a provider.
+ * Backend: GET /api/v1/providers/{provider_id}/usage
+ */
+export const getProviderUsage = async (providerId: string): Promise<ProviderUsage> => {
+  const response = await axiosInstance.get<APIResponse<ProviderUsage>>(`/api/v1/providers/${providerId}/usage`);
+  return response.data.data;
 };

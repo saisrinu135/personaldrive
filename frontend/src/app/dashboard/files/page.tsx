@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { FileManager } from '@/components/file-management/FileManager';
-import { listProviders } from '@/services/provider.service';
+import { listProvidersDropdown } from '@/services/provider.service';
 import { Provider } from '@/types/provider.types';
 import { Loader2, HardDrive } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -17,7 +17,7 @@ export default function FilesPage() {
   useEffect(() => {
     const fetchProviders = async () => {
       try {
-        const data = await listProviders();
+        const data = await listProvidersDropdown();
         setProviders(data);
         if (data.length > 0) {
           // Default to first available active provider

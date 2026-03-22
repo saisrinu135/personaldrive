@@ -177,6 +177,14 @@ export const getFileMetadata = async (fileId: string): Promise<FileUploadRespons
 };
 
 /**
+ * Get a short-lived presigned URL for inline File Preview streaming.
+ */
+export const getFilePreviewUrl = async (fileId: string): Promise<string> => {
+  const response = await axiosInstance.get<APIResponse<{ url: string }>>(`/api/v1/objects/${fileId}/preview`);
+  return response.data.data.url;
+};
+
+/**
  * Get aggregate statistics for the user's files natively parsed by PostgreSQL
  */
 export const getUserStats = async (): Promise<UserStatsResponse> => {
