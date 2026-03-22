@@ -151,3 +151,20 @@ async def delete_object(
         status=True,
         message="Object deleted successfully"
     )
+
+@router.get("/{object_id}/preview", response_model=APIResponse)
+async def get_object_preview(
+    object_id: UUID,
+    current_user: CurrentUser,
+    db: Database
+):
+    """Get a presigned URL for inline preview"""
+    service = ObjectService(db)
+    
+    url = await service.get_presigned_url(current_user.id, object_id, inline=True)
+    
+    return APIResponse(
+        status=True,
+        message="Preview URL generated successfully",
+        data={"url": url}
+    )

@@ -52,12 +52,18 @@ class ProviderResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ProviderUsageResponse(ProviderResponse):
+    usage: dict = {}
     
 class ProviderListResponse(APIResponse):
     data: Optional[List[ProviderResponse]] = []
 
 
-# Add these schemas to your existing app/schemas/provider.py file:
+class ProviderListUsage(APIResponse):
+    data: List[ProviderUsageResponse]
+
 
 class ProviderTestConnection(BaseModel):
     """Schema for testing provider connection without saving"""

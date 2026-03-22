@@ -44,3 +44,8 @@ class BaseStorageClient(ABC):
     async def delete_object(self, key: str) -> bool:
         """Delete an object from the bucket"""
         pass
+
+    @abstractmethod
+    async def generate_presigned_url(self, key: str, expiration: int = 3600, response_content_disposition: str = 'inline') -> str:
+        """Generate a secure presigned access URL"""
+        pass

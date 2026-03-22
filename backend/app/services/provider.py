@@ -350,3 +350,105 @@ class StorageService:
             usage_data["usage_percentage"] = round((usage_gb / provider.storage_limit_gb) * 100, 2)
         
         return usage_data
+
+
+    async def list_with_usage(self, user_id: UUID, is_active: bool = None):
+        """List the providers with the usage details using a single optimized query
+        Args:
+            user_id: UUID
+        Returns:
+            List of providers with usage details
+        """
+        # Single query to get providers with their usage statistics
+        query = select(
+            StorageProvider.id,
+            StorageProvider.name,
+            StorageProvider.provider_type,
+            StorageProvider.provider_name,
+            StorageProvider.bucket_name,
+            StorageProvider.region,
+            StorageProvider.is_active,
+            StorageProvider.is_default,
+            StorageProvider.storage_limit_gb,
+            StorageProvider.created_at,
+            StorageProvider.endpoint_url,
+            func.coalesce(func.sum(Object.size_bytes), 0).label('total_size'),
+            func.coalesce(func.count(Object.id), 0).label('total_objects')
+        ).select_from(
+            StorageProvider.__table__.outerjoin(
+                Object.__table__,
+                and_(
+                    StorageProvider.id == Object.provider_id,
+                    Object.user_id == user_id
+                )
+            )
+        ).where(
+            StorageProvider.user_id == user_id
+        ).group_by(
+            StorageProvider.id,
+            StorageProvider.name,
+            StorageProvider.provider_type,
+            StorageProvider.provider_name,
+            StorageProvider.bucket_name,
+            StorageProvider.region,
+            StorageProvider.is_active,
+            StorageProvider.is_default,
+            StorageProvider.storage_limit_gb,
+            StorageProvider.created_at,
+            StorageProvider.endpoint_url
+        )
+
+        if is_active is not None:
+            query = query.where(StorageProvider.is_active == is_active)
+        
+        result = await self.db.execute(query)
+        providers_data = result.fetchall()
+        
+        providers_with_usage = []
+        
+        for row in providers_data:
+            # Convert to float to handle Decimal types from database
+            total_size = float(row.total_size) if row.total_size else 0.0
+            total_objects = int(row.total_objects) if row.total_objects else 0
+            storage_limit_gb = float(row.storage_limit_gb) if row.storage_limit_gb else None
+            
+            
+            provider_data = {
+                "id": row.id,
+                "name": row.name,
+                "provider_type": row.provider_type.value if row.provider_type else None,
+                "provider_name": row.provider_name,
+                "bucket_name": row.bucket_name,
+                "region": row.region,
+                "endpoint_url": row.endpoint_url,
+                "is_active": row.is_active,
+                "is_default": row.is_default,
+                "storage_limit_gb": row.storage_limit_gb,
+                "created_at": row.created_at,
+                "usage": {
+                    "total_size_bytes": int(total_size),
+                    "total_objects": total_objects,
+                    "total_size_mb": round(total_size / (1024 * 1024), 2),
+                    "total_size_gb": round(total_size / (1024 * 1024 * 1024), 4),
+                    "storage_limit_gb": storage_limit_gb,
+                    "usage_percentage": None,
+                    "remaining_gb": None,
+                    "is_over_limit": False
+                }
+            }
+            
+            # Calculate usage percentage if limit is set
+            if storage_limit_gb and storage_limit_gb > 0:
+                limit_bytes = storage_limit_gb * 1024 * 1024 * 1024
+                usage_percentage = (total_size / limit_bytes) * 100
+                remaining_gb = (limit_bytes - total_size) / (1024 * 1024 * 1024)
+                
+                provider_data["usage"].update({
+                    "usage_percentage": round(usage_percentage, 2),
+                    "remaining_gb": round(remaining_gb, 4),
+                    "is_over_limit": total_size > limit_bytes
+                })
+            
+            providers_with_usage.append(provider_data)
+        
+        return providers_with_usage

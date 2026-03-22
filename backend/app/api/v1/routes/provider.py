@@ -9,7 +9,8 @@ from app.schemas.provider import (
     ProviderTestConnection,
     ProviderListResponse,
     ProviderResponse,
-    ProviderUpdate
+    ProviderUpdate,
+    ProviderUsageResponse
 )
 from app.schemas.common import APIResponse
 from app.config.logger import get_logger, get_db_logger, log_error, log_db_operation
@@ -31,6 +32,32 @@ async def test_provider_connection(
     service = StorageService(db)
     result = await service.test_provider_connection(connection_data.dict())
     return result
+
+
+@router.get(
+    "/dropdown",
+    response_model=APIResponse,
+    summary="Get all storage providers for the current user",
+    status_code=status.HTTP_200_OK
+)
+async def list_providers_dropdown(
+    current_user: CurrentUser,
+    db: Database,
+    is_active: bool = None
+):
+    """API Endpoint to list all the providers of the user"""
+    service = StorageService(db)
+    providers = await service.list(user_id=current_user.id, is_active=is_active)
+
+    # Convert to response models
+    provider_responses = [ProviderResponse.from_orm(
+        provider) for provider in providers]
+
+    return APIResponse(
+        status=True,
+        message="Providers retrieved successfully",
+        data=provider_responses
+    )
 
 
 @router.post(
@@ -60,7 +87,8 @@ async def create_provider(
 @router.get(
     "/",
     response_model=APIResponse,
-    summary="Get all storage providers for the current user"
+    summary="Get all storage providers for the current user",
+    status_code=status.HTTP_200_OK
 )
 async def list_providers(
     current_user: CurrentUser,
@@ -69,11 +97,10 @@ async def list_providers(
 ):
     """API Endpoint to list all the providers of the user"""
     service = StorageService(db)
-    providers = await service.list(user_id=current_user.id, is_active=is_active)
+    providers = await service.list_with_usage(user_id=current_user.id, is_active=is_active)
 
     # Convert to response models
-    provider_responses = [ProviderResponse.from_orm(
-        provider) for provider in providers]
+    provider_responses = [ProviderUsageResponse.from_orm(provider) for provider in providers]
 
     return APIResponse(
         status=True,
@@ -82,9 +109,32 @@ async def list_providers(
     )
 
 
+@router.get(
+    "/{provider_id}/usage/",
+    response_model=APIResponse,
+    status_code=status.HTTP_200_OK
+)
+async def get_provider_usage(
+    provider_id: UUID,
+    current_user: CurrentUser,
+    db: Database
+):
+    """Get storage usage metrics for a specific provider"""
+    
+    service = StorageService(db)
+    usage_data = await service.get_provider_storage_usage(user_id=current_user.id, provider_id=provider_id)
+    
+    return APIResponse(
+        status=True,
+        message="Provider usage retrieved successfully",
+        data=usage_data
+    )
+
+
 @router.put(
     "/{provider_id}/activate",
     summary="Activate a storage provider",
+    status_code=status.HTTP_200_OK,
     response_model=APIResponse
 )
 async def activate_provider(
@@ -148,11 +198,6 @@ async def get_provider(
         )
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve provider: {str(e)}"
-        )
 
 
 @router.put("/{provider_id}", response_model=APIResponse)
@@ -164,28 +209,19 @@ async def update_provider(
 ):
     """Update provider settings"""
     service = StorageService(db)
+    provider = await service.update_provider(
+        user_id=current_user.id,
+        provider_id=provider_id,
+        provider_data=provider_data
+    )
 
-    try:
-        provider = await service.update_provider(
-            user_id=current_user.id,
-            provider_id=provider_id,
-            provider_data=provider_data
-        )
+    provider_response = ProviderResponse.from_orm(provider)
 
-        provider_response = ProviderResponse.from_orm(provider)
-
-        return APIResponse(
-            status=True,
-            message="Provider updated successfully",
-            data=provider_response
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update provider: {str(e)}"
-        )
+    return APIResponse(
+        status=True,
+        message="Provider updated successfully",
+        data=provider_response
+    )
 
 
 @router.delete("/{provider_id}", response_model=APIResponse)
@@ -197,29 +233,9 @@ async def delete_provider(
     """Delete provider"""
     service = StorageService(db)
 
-    try:
-        # Check if provider has objects
-        from app.services.objects import ObjectService
-        object_service = ObjectService(db)
+    await service.delete(user_id=current_user.id, provider_id=provider_id)
 
-        # Get objects count for this provider
-        result = await object_service.list_objects(
-            user_id=current_user.id,
-            provider_id=provider_id,
-            page=1,
-            limit=1
-        )
-
-        await service.delete(user_id=current_user.id, provider_id=provider_id)
-
-        return APIResponse(
-            status=True,
-            message="Provider deleted successfully"
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete provider: {str(e)}"
-        )
+    return APIResponse(
+        status=True,
+        message="Provider deleted successfully"
+    )

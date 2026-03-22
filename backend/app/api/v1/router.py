@@ -1,9 +1,10 @@
 from fastapi import APIRouter
-from app.api.v1.routes import auth, user, provider, object
+from app.api.v1.routes import auth, user, provider, objects
 
 router = APIRouter(prefix="/v1")
 
+# Include routers in specific order to avoid conflicts
 router.include_router(auth.router)
 router.include_router(user.router)
 router.include_router(provider.router)
-router.include_router(object.router)
+router.include_router(objects.router)

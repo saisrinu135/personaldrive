@@ -329,3 +329,37 @@ class ObjectService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="File not found in storage"
             )
+
+    async def get_presigned_url(self, user_id: UUID, object_id: UUID, inline: bool = True) -> str:
+        """Generate a presigned URL for an object"""
+        obj = await self.get_object(user_id, object_id)
+        
+        # Get provider
+        provider = await self.storage_service.get_by_id(
+            user_id=user_id, 
+            provider_id=obj.provider_id, 
+            raise_exception=True
+        )
+        
+        if not provider.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot generate URL for inactive provider"
+            )
+        
+        # Get storage client
+        client = await self._get_storage_client(provider)
+        
+        try:
+            disposition = f"inline; filename=\"{obj.filename}\"" if inline else f"attachment; filename=\"{obj.filename}\""
+            url = await client.generate_presigned_url(
+                key=obj.s3_key,
+                expiration=3600,
+                response_content_disposition=disposition
+            )
+            return url
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to generate presigned URL: {str(e)}"
+            )

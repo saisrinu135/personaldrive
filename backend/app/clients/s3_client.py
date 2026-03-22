@@ -183,3 +183,28 @@ class S3StorageClient(BaseStorageClient):
             return True
         except ClientError as e:
             raise Exception(f"Failed to delete object: {e.response['Error']['Message']}")
+
+    async def generate_presigned_url(self, key: str, expiration: int = 3600, response_content_disposition: str = 'inline') -> str:
+        """Generate a presigned URL for downloading/previewing an object"""
+        client = self._get_client()
+        loop = asyncio.get_event_loop()
+        
+        try:
+            params = {
+                'Bucket': self.bucket_name,
+                'Key': key,
+            }
+            if response_content_disposition:
+                params['ResponseContentDisposition'] = response_content_disposition
+                
+            url = await loop.run_in_executor(
+                None,
+                lambda: client.generate_presigned_url(
+                    'get_object',
+                    Params=params,
+                    ExpiresIn=expiration
+                )
+            )
+            return url
+        except ClientError as e:
+            raise Exception(f"Failed to generate presigned URL: {e.response['Error']['Message']}")
