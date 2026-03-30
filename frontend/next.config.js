@@ -1,10 +1,16 @@
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
-  // telemetry is not a valid Next.js config key — removed
-  // Next.js 16 uses Turbopack by default; @/* alias is handled by tsconfig.json paths
-  turbopack: {},
+  turbopack: {
+    // Explicitly set root to this directory so Next.js ignores the parent lockfile
+    root: __dirname,
+  },
 }
 
 export default nextConfig;
