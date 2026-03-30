@@ -1,5 +1,5 @@
-// Service Worker for Personal Drive PWA
-const CACHE_NAME = 'personal-drive-v1';
+// Service Worker for CloudVault PWA
+const CACHE_NAME = 'cloudvault-v1';
 
 // Assets to cache on install
 const STATIC_ASSETS = [

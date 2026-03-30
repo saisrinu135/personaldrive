@@ -15,13 +15,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Personal Drive',
-  description: 'A personal file storage and management application',
+  title: 'CloudVault',
+  description: 'Your personal, secure cloud storage — access files from any provider, anywhere.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Personal Drive',
+    title: 'CloudVault',
   },
   icons: {
     icon: [
