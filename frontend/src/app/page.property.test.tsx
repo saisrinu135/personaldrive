@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { render, screen, cleanup } from '@testing-library/react';
-import { vi, afterEach } from 'vitest';
+import { vi, afterEach, describe, it, expect } from 'vitest';
 import AuthContext from '@/contexts/AuthContext';
 import { AuthContextType } from '@/types/auth-state.types';
 import { User } from '@/types/auth.types';
@@ -63,11 +63,8 @@ const userArbitrary = fc.record({
   id: fc.string({ minLength: 1 }),
   name: fc.string({ minLength: 3, maxLength: 50 }).filter(name => /^[a-zA-Z\s]+$/.test(name.trim())),
   email: fc.emailAddress(),
-  createdAt: fc.date(),
-  updatedAt: fc.date(),
-  storageUsed: fc.nat(),
-  storageLimit: fc.nat(),
-  avatar: fc.option(fc.webUrl(), { nil: undefined }),
+  created_at: fc.date().map(d => d.toISOString()),
+  updated_at: fc.date().map(d => d.toISOString()),
 });
 
 // Test wrapper component
@@ -195,8 +192,8 @@ describe('Landing Page Authentication State Properties', () => {
     expect(heroButtons.length).toBe(0);
 
     // Should still show the main content
-    expect(screen.getByText(/your personal/i)).toBeInTheDocument();
-    expect(screen.getByText(/cloud storage/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/your personal/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/cloud storage/i).length).toBeGreaterThan(0);
   });
 
   it('should display consistent branding and content regardless of auth state', () => {
@@ -226,8 +223,8 @@ describe('Landing Page Authentication State Properties', () => {
           );
 
           // Core content should always be present
-          expect(screen.getByText(/your personal/i)).toBeInTheDocument();
-          expect(screen.getByText(/cloud storage/i)).toBeInTheDocument();
+          expect(screen.getAllByText(/your personal/i).length).toBeGreaterThan(0);
+          expect(screen.getAllByText(/cloud storage/i).length).toBeGreaterThan(0);
           expect(screen.getByText(/store, organize, and access your files/i)).toBeInTheDocument();
 
           // Features section should always be present
@@ -236,7 +233,7 @@ describe('Landing Page Authentication State Properties', () => {
           expect(screen.getByText(/smart organization/i)).toBeInTheDocument();
 
           // Footer should always be present
-          expect(screen.getByText(/cloudstore/i)).toBeInTheDocument();
+          expect(screen.getByText(/cloudvault/i)).toBeInTheDocument();
         }
       ),
       { numRuns: 5 }

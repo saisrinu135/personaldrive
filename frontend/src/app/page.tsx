@@ -360,10 +360,8 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="text-center">
             <div className="flex items-center justify-center space-x-2 mb-4">
-              <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">CS</span>
-              </div>
-              <span className="font-semibold text-lg">CloudStore</span>
+              <img src="/icon-192.png" alt="CloudVault" className="h-8 w-8 rounded-lg" />
+              <span className="font-semibold text-lg">CloudVault</span>
             </div>
             <p className="text-sm text-muted-foreground">
               Your personal cloud storage solution. Secure, fast, and reliable.

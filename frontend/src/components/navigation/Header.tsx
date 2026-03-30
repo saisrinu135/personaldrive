@@ -122,10 +122,8 @@ const Header: React.FC<HeaderProps> = ({
               whileTap={{ scale: 0.95 }}
               className="flex items-center space-x-2"
             >
-              <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">CS</span>
-              </div>
-              <span className="hidden sm:block font-semibold text-lg">CloudStore</span>
+              <img src="/icon-192.png" alt="CloudVault" className="h-8 w-8 rounded-lg" />
+              <span className="hidden sm:block font-semibold text-lg">CloudVault</span>
             </motion.div>
           </Link>
         </div>

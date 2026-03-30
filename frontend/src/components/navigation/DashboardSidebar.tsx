@@ -32,10 +32,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       <div className={cn("flex items-center mb-8 px-4 h-12 mt-2", collapsed ? "justify-center" : "justify-between")}>
         {!collapsed && (
           <Link href="/dashboard" className="flex items-center space-x-2 select-none">
-            <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-primary-foreground font-bold text-sm text-white">CS</span>
-            </div>
-            <span className="font-semibold text-lg flex-shrink-0">CloudStore</span>
+            <img src="/icon-192.png" alt="CloudVault" className="h-8 w-8 rounded-lg flex-shrink-0" />
+            <span className="font-semibold text-lg flex-shrink-0">CloudVault</span>
           </Link>
         )}
         
