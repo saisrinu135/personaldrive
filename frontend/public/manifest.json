@@ -1,7 +1,7 @@
 {
-  "name": "Personal Drive",
-  "short_name": "PersonalDrive",
-  "description": "A personal file storage and management application",
+  "name": "CloudVault",
+  "short_name": "CloudVault",
+  "description": "Your personal, secure cloud storage — access files from any provider, anywhere.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f0f13",
