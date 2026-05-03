@@ -42,3 +42,21 @@ class ObjectDownloadResponse(BaseModel):
     filename: str
     content_type: Optional[str]
     size_bytes: int
+
+class MultipartUploadInit(BaseModel):
+    """Schema for initializing a multipart upload"""
+    filename: str = Field(..., description="Original filename")
+    content_type: Optional[str] = Field(None, description="MIME content type")
+    folder_path: Optional[str] = Field("", description="Folder path (prefix)")
+
+class MultipartUploadPart(BaseModel):
+    """Schema for completing a multipart upload"""
+    PartNumber: int
+    ETag: str
+
+class MultipartUploadComplete(BaseModel):
+    """Schema for completing a multipart upload"""
+    parts: List[MultipartUploadPart]
+    size_bytes: int = Field(..., description="Total size of the file in bytes")
+    meta: Optional[Dict[str, Any]] = Field(default_factory=dict)
+

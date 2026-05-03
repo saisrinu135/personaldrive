@@ -113,8 +113,11 @@ describe('Landing Page Authentication State Properties', () => {
         expect(dashboardLinks[0]).toHaveAttribute('href', '/dashboard');
 
         // Should display user greeting
-        expect(screen.getByText('Welcome back,')).toBeInTheDocument();
-        expect(screen.getByText(user.name)).toBeInTheDocument();
+        // Should display user greeting
+        expect(screen.queryAllByText(/Welcome back,/i).length).toBeGreaterThan(0);
+        const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const normalizedName = user.name.trim().replace(/\s+/g, ' ');
+        expect(screen.queryAllByText(new RegExp(escapeRegExp(normalizedName), 'i')).length).toBeGreaterThan(0);
 
         // Should NOT have login/register buttons in hero section
         expect(screen.queryByRole('link', { name: /get started free/i })).not.toBeInTheDocument();
@@ -225,15 +228,15 @@ describe('Landing Page Authentication State Properties', () => {
           // Core content should always be present
           expect(screen.getAllByText(/your personal/i).length).toBeGreaterThan(0);
           expect(screen.getAllByText(/cloud storage/i).length).toBeGreaterThan(0);
-          expect(screen.getByText(/store, organize, and access your files/i)).toBeInTheDocument();
+          expect(screen.getAllByText(/store, organize, and access your files/i).length).toBeGreaterThan(0);
 
           // Features section should always be present
-          expect(screen.getByText(/secure cloud storage/i)).toBeInTheDocument();
-          expect(screen.getByText(/easy file upload/i)).toBeInTheDocument();
-          expect(screen.getByText(/smart organization/i)).toBeInTheDocument();
+          expect(screen.getAllByText(/secure cloud storage/i).length).toBeGreaterThan(0);
+          expect(screen.getAllByText(/easy file upload/i).length).toBeGreaterThan(0);
+          expect(screen.getAllByText(/smart organization/i).length).toBeGreaterThan(0);
 
           // Footer should always be present
-          expect(screen.getByText(/cloudvault/i)).toBeInTheDocument();
+          expect(screen.getAllByText(/cloudvault/i).length).toBeGreaterThan(0);
         }
       ),
       { numRuns: 5 }

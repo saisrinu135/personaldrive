@@ -208,3 +208,88 @@ class S3StorageClient(BaseStorageClient):
             return url
         except ClientError as e:
             raise Exception(f"Failed to generate presigned URL: {e.response['Error']['Message']}")
+
+    async def create_multipart_upload(self, key: str, content_type: str = None) -> str:
+        """Initiate a multipart upload and return the upload ID"""
+        client = self._get_client()
+        loop = asyncio.get_event_loop()
+        
+        try:
+            extra_args = {}
+            if content_type:
+                extra_args['ContentType'] = content_type
+                
+            response = await loop.run_in_executor(
+                None,
+                lambda: client.create_multipart_upload(
+                    Bucket=self.bucket_name,
+                    Key=key,
+                    **extra_args
+                )
+            )
+            return response['UploadId']
+        except ClientError as e:
+            raise Exception(f"Failed to create multipart upload: {e.response['Error']['Message']}")
+
+    async def upload_part(self, key: str, upload_id: str, part_number: int, data: bytes) -> Dict[str, Any]:
+        """Upload a part and return the ETag"""
+        client = self._get_client()
+        loop = asyncio.get_event_loop()
+        
+        try:
+            response = await loop.run_in_executor(
+                None,
+                lambda: client.upload_part(
+                    Bucket=self.bucket_name,
+                    Key=key,
+                    PartNumber=part_number,
+                    UploadId=upload_id,
+                    Body=data
+                )
+            )
+            return {
+                'PartNumber': part_number,
+                'ETag': response['ETag']
+            }
+        except ClientError as e:
+            raise Exception(f"Failed to upload part {part_number}: {e.response['Error']['Message']}")
+
+    async def complete_multipart_upload(self, key: str, upload_id: str, parts: list) -> Dict[str, Any]:
+        """Complete a multipart upload"""
+        client = self._get_client()
+        loop = asyncio.get_event_loop()
+        
+        try:
+            # Sort parts by PartNumber to ensure correct order
+            sorted_parts = sorted(parts, key=lambda p: p['PartNumber'])
+            
+            response = await loop.run_in_executor(
+                None,
+                lambda: client.complete_multipart_upload(
+                    Bucket=self.bucket_name,
+                    Key=key,
+                    UploadId=upload_id,
+                    MultipartUpload={'Parts': sorted_parts}
+                )
+            )
+            return response
+        except ClientError as e:
+            raise Exception(f"Failed to complete multipart upload: {e.response['Error']['Message']}")
+
+    async def abort_multipart_upload(self, key: str, upload_id: str) -> bool:
+        """Abort a multipart upload"""
+        client = self._get_client()
+        loop = asyncio.get_event_loop()
+        
+        try:
+            await loop.run_in_executor(
+                None,
+                lambda: client.abort_multipart_upload(
+                    Bucket=self.bucket_name,
+                    Key=key,
+                    UploadId=upload_id
+                )
+            )
+            return True
+        except ClientError as e:
+            raise Exception(f"Failed to abort multipart upload: {e.response['Error']['Message']}")

@@ -26,6 +26,7 @@ export interface FileUploaderProps {
 interface FileWithProgress {
   file: File;
   progress: UploadProgress;
+  abortController?: AbortController;
 }
 
 const DEFAULT_ACCEPTED_TYPES = [
@@ -153,6 +154,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         progress: 0,
         status: 'pending',
       },
+      abortController: new AbortController(),
     }));
 
     setUploadingFiles(filesWithProgress);
@@ -165,6 +167,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         await uploadFile(file, {
           providerId: localProviderId,
           folderPath,
+          abortController: fileWithProgress.abortController,
           onProgress: (progress) => {
             // Update progress for this specific file
             setUploadingFiles(prev => 
@@ -275,8 +278,11 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
     }
   }, [disabled, isUploading]);
 
-  // Remove file from upload queue
-  const removeFile = useCallback((fileToRemove: File) => {
+  // Remove or cancel file
+  const handleRemoveOrCancel = useCallback((fileToRemove: File, abortController?: AbortController) => {
+    if (abortController) {
+      abortController.abort();
+    }
     setUploadingFiles(prev => prev.filter(f => f.file !== fileToRemove));
   }, []);
 
@@ -365,13 +371,13 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
             exit={{ opacity: 0, height: 0 }}
             className="space-y-2"
           >
-            {uploadingFiles.map(({ file, progress }) => (
+            {uploadingFiles.map(({ file, progress, abortController }) => (
               <FileUploadItem
                 key={progress.fileId}
                 file={file}
                 progress={progress}
-                onRemove={removeFile}
-                canRemove={progress.status === 'pending' || progress.status === 'error'}
+                onRemove={() => handleRemoveOrCancel(file, abortController)}
+                canRemove={progress.status === 'pending' || progress.status === 'error' || progress.status === 'uploading'}
               />
             ))}
           </motion.div>
@@ -385,7 +391,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
 interface FileUploadItemProps {
   file: File;
   progress: UploadProgress;
-  onRemove: (file: File) => void;
+  onRemove: () => void;
   canRemove: boolean;
 }
 
@@ -464,9 +470,10 @@ const FileUploadItem: React.FC<FileUploadItemProps> = ({
           size="sm"
           onClick={(e) => {
             e.stopPropagation();
-            onRemove(file);
+            onRemove();
           }}
           className="p-1 h-auto"
+          title={progress.status === 'uploading' ? 'Cancel Upload' : 'Remove'}
         >
           <X className="w-4 h-4" />
         </Button>

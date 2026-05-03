@@ -141,8 +141,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           refreshToken: loginResponse.refresh_token,
         },
       });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+    } catch (error: any) {
+      const errorMessage = authService.getErrorMessage(error) || 'Login failed';
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
       throw error;
     }
@@ -158,8 +158,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Automatically log in after successful registration
       await login(email, password);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+    } catch (error: any) {
+      const errorMessage = authService.getErrorMessage(error) || 'Registration failed';
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
       throw error;
     }

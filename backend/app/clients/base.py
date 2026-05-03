@@ -49,3 +49,23 @@ class BaseStorageClient(ABC):
     async def generate_presigned_url(self, key: str, expiration: int = 3600, response_content_disposition: str = 'inline') -> str:
         """Generate a secure presigned access URL"""
         pass
+
+    @abstractmethod
+    async def create_multipart_upload(self, key: str, content_type: str = None) -> str:
+        """Initiate a multipart upload and return the upload ID"""
+        pass
+
+    @abstractmethod
+    async def upload_part(self, key: str, upload_id: str, part_number: int, data: bytes) -> Dict[str, Any]:
+        """Upload a part and return the ETag"""
+        pass
+
+    @abstractmethod
+    async def complete_multipart_upload(self, key: str, upload_id: str, parts: list) -> Dict[str, Any]:
+        """Complete a multipart upload"""
+        pass
+
+    @abstractmethod
+    async def abort_multipart_upload(self, key: str, upload_id: str) -> bool:
+        """Abort a multipart upload"""
+        pass

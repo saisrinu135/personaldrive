@@ -11,6 +11,8 @@ export interface FileUploadOptions {
   folderPath?: string;
   /** Progress callback, called during upload */
   onProgress?: (progress: UploadProgress) => void;
+  /** Optional abort controller to cancel the upload */
+  abortController?: AbortController;
 }
 
 export interface UploadProgress {
@@ -69,57 +71,124 @@ export interface UserStatsResponse {
 // ─── Upload ──────────────────────────────────────────────────────────────────
 
 /**
- * Upload a single file to a storage provider.
- * Backend: POST /api/v1/objects/upload?provider_id=<uuid>[&folder_path=<path>]
+ * Upload a single file to a storage provider using multipart upload.
+ * Backend: POST /api/v1/objects/multipart/*
  */
 export const uploadFile = async (
   file: File,
   options: FileUploadOptions
 ): Promise<FileUploadResponse> => {
-  const { providerId, folderPath = '', onProgress } = options;
-
-  const formData = new FormData();
-  formData.append('file', file);
-
-  const params = new URLSearchParams({ provider_id: providerId });
-  if (folderPath) {
-    params.append('folder_path', folderPath);
-  }
-
+  const { providerId, folderPath = '', onProgress, abortController } = options;
   const fileId = `${Date.now()}-${file.name}`;
-
+  
   if (onProgress) {
     onProgress({ fileId, fileName: file.name, progress: 0, status: 'uploading' });
   }
 
-  try {
-    const response = await axiosInstance.post<APIResponse<FileUploadResponse>>(
-      `/api/v1/objects/upload?${params.toString()}`,
-      formData,
-      {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          if (onProgress && progressEvent.total) {
-            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            onProgress({ fileId, fileName: file.name, progress, status: 'uploading' });
-          }
-        },
-      }
-    );
+  let uploadId = '';
+  let s3Key = '';
 
+  try {
+    // 1. Init multipart upload
+    const initResponse = await axiosInstance.post<APIResponse<{upload_id: string, s3_key: string, filename: string}>>(
+      `/api/v1/objects/multipart/init?provider_id=${providerId}`,
+      {
+        filename: file.name,
+        content_type: file.type || 'application/octet-stream',
+        folder_path: folderPath
+      },
+      { signal: abortController?.signal }
+    );
+    
+    uploadId = initResponse.data.data.upload_id;
+    s3Key = initResponse.data.data.s3_key;
+    const finalFilename = initResponse.data.data.filename;
+    
+    // 2. Upload chunks
+    const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE) || 1; // handle 0 byte files
+    const parts: { PartNumber: number, ETag: string }[] = [];
+    
+    let uploadedBytes = 0;
+    
+    for (let i = 0; i < totalChunks; i++) {
+      if (abortController?.signal.aborted) {
+        throw new Error('Upload aborted');
+      }
+      
+      const start = i * CHUNK_SIZE;
+      const end = Math.min(start + CHUNK_SIZE, file.size);
+      const chunk = file.slice(start, end);
+      const partNumber = i + 1;
+      
+      const formData = new FormData();
+      formData.append('file', chunk);
+      
+      const partResponse = await axiosInstance.post<APIResponse<{PartNumber: number, ETag: string}>>(
+        `/api/v1/objects/multipart/part?provider_id=${providerId}&s3_key=${encodeURIComponent(s3Key)}&upload_id=${uploadId}&part_number=${partNumber}`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          signal: abortController?.signal,
+          onUploadProgress: (progressEvent) => {
+            if (onProgress && progressEvent.loaded) {
+               // Calculate real-time progress combining completed chunks and current chunk
+               const currentProgressBytes = uploadedBytes + progressEvent.loaded;
+               const progress = Math.round((currentProgressBytes * 100) / (file.size || 1));
+               onProgress({ fileId, fileName: file.name, progress: Math.min(progress, 99), status: 'uploading' });
+            }
+          }
+        }
+      );
+      
+      parts.push(partResponse.data.data);
+      uploadedBytes += chunk.size;
+      
+      if (onProgress) {
+        const progress = Math.round((uploadedBytes * 100) / (file.size || 1));
+        onProgress({ fileId, fileName: file.name, progress: Math.min(progress, 99), status: 'uploading' });
+      }
+    }
+    
+    // 3. Complete multipart upload
+    const completeResponse = await axiosInstance.post<APIResponse<FileUploadResponse>>(
+      `/api/v1/objects/multipart/complete?provider_id=${providerId}&s3_key=${encodeURIComponent(s3Key)}&upload_id=${uploadId}&filename=${encodeURIComponent(finalFilename)}&content_type=${encodeURIComponent(file.type || 'application/octet-stream')}`,
+      {
+        size_bytes: file.size,
+        parts: parts,
+        meta: {}
+      },
+      { signal: abortController?.signal }
+    );
+    
     if (onProgress) {
       onProgress({ fileId, fileName: file.name, progress: 100, status: 'completed' });
     }
+    
+    return completeResponse.data.data;
+    
+  } catch (error: any) {
+    // Check if error is due to abort
+    const isAborted = abortController?.signal.aborted || error.name === 'CanceledError' || error.message === 'canceled' || error.message === 'Upload aborted';
+    
+    // If we have an uploadId, we should try to abort the multipart upload on the server to cleanup chunks
+    if (uploadId && s3Key && isAborted) {
+      try {
+        await axiosInstance.post(
+          `/api/v1/objects/multipart/abort?provider_id=${providerId}&s3_key=${encodeURIComponent(s3Key)}&upload_id=${uploadId}`
+        );
+      } catch (abortErr) {
+        console.error("Failed to abort multipart upload on server", abortErr);
+      }
+    }
 
-    return response.data.data;
-  } catch (error) {
     if (onProgress) {
       onProgress({
         fileId,
         fileName: file.name,
         progress: 0,
         status: 'error',
-        error: error instanceof Error ? error.message : 'Upload failed',
+        error: isAborted ? 'Upload cancelled' : (error instanceof Error ? error.message : 'Upload failed'),
       });
     }
     throw error;
@@ -176,11 +245,16 @@ export const getFileMetadata = async (fileId: string): Promise<FileUploadRespons
   return response.data.data;
 };
 
-/**
- * Get a short-lived presigned URL for inline File Preview streaming.
- */
 export const getFilePreviewUrl = async (fileId: string): Promise<string> => {
   const response = await axiosInstance.get<APIResponse<{ url: string }>>(`/api/v1/objects/${fileId}/preview`);
+  return response.data.data.url;
+};
+
+/**
+ * Get a short-lived presigned URL for direct downloading.
+ */
+export const getFileDirectLink = async (fileId: string): Promise<string> => {
+  const response = await axiosInstance.get<APIResponse<{ url: string }>>(`/api/v1/objects/${fileId}/direct-link?ttl=3600`);
   return response.data.data.url;
 };
 
@@ -196,26 +270,18 @@ export const getUserStats = async (): Promise<UserStatsResponse> => {
 
 /**
  * Download a file and trigger a browser download.
- * Backend: GET /api/v1/objects/{object_id}/download  (returns a StreamingResponse)
+ * Backend: GET /api/v1/objects/{object_id}/direct-link
  */
 export const downloadFile = async (fileId: string, fileName?: string): Promise<void> => {
-  const response = await axiosInstance.get(`/api/v1/objects/${fileId}/download`, {
-    responseType: 'blob',
-  });
-
-  // Attempt to get filename from Content-Disposition header
-  const disposition = response.headers['content-disposition'] as string | undefined;
-  const match = disposition?.match(/filename=([^;]+)/);
-  const resolvedName = fileName || match?.[1]?.trim() || fileId;
-
-  const url = URL.createObjectURL(response.data as Blob);
+  const url = await getFileDirectLink(fileId);
   const link = document.createElement('a');
   link.href = url;
-  link.download = resolvedName;
+  if (fileName) {
+    link.download = fileName;
+  }
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 };
 
 // ─── Delete ──────────────────────────────────────────────────────────────────
