@@ -100,20 +100,12 @@ export const FileManager: React.FC<FileManagerProps> = ({
     setFilteredFiles(results);
   }, []);
 
-  // Handle file upload
-  const handleFileUpload = useCallback(async (uploadFiles: File[]) => {
-    try {
-      for (const file of uploadFiles) {
-        await uploadFile(file, { providerId });
-      }
-      
-      // Refresh files
-      await loadFiles();
-      setShowUploader(false);
-    } catch (error) {
-      throw error; // Let FileUploader handle the error display
-    }
-  }, [providerId, loadFiles]);
+  // Handle file upload complete
+  const handleUploadComplete = useCallback(async () => {
+    // Refresh files
+    await loadFiles();
+    setShowUploader(false);
+  }, [loadFiles]);
 
   // Handle refresh
   const handleRefresh = useCallback(() => {
@@ -175,7 +167,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
               <FileUploader 
                 providerId={providerId}
                 providers={providers}
-                onUpload={handleFileUpload} 
+                onUploadComplete={handleUploadComplete} 
               />
             </Card>
           </motion.div>

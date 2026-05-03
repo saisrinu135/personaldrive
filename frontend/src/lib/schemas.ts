@@ -82,7 +82,7 @@ export const passwordChangeSchema = z
 // File validation schemas
 export const fileUploadSchema = z.object({
   name: z.string().min(1, 'Filename is required').max(255, 'Filename is too long'),
-  size: z.number().min(1, 'File cannot be empty').max(100 * 1024 * 1024, 'File size cannot exceed 100MB'),
+  size: z.number().min(1, 'File cannot be empty').max(5 * 1024 * 1024 * 1024, 'File size cannot exceed 5GB'),
   type: z.string().min(1, 'File type is required'),
 });
 

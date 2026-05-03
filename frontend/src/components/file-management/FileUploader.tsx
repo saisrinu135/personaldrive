@@ -15,6 +15,7 @@ export interface FileUploaderProps {
   maxSize?: number; // in bytes
   multiple?: boolean;
   onUpload?: (files: File[]) => Promise<void>;
+  onUploadComplete?: () => void;
   onProgress?: (progress: UploadProgress) => void;
   disabled?: boolean;
   providerId: string;
@@ -39,13 +40,14 @@ const DEFAULT_ACCEPTED_TYPES = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ];
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB default
+const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5GB default
 
 export const FileUploader: React.FC<FileUploaderProps> = ({
   accept = DEFAULT_ACCEPTED_TYPES,
   maxSize = MAX_FILE_SIZE,
   multiple = true,
   onUpload,
+  onUploadComplete,
   onProgress,
   disabled = false,
   providerId,
@@ -195,6 +197,9 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
       // Clear uploading files after a delay to show completion
       setTimeout(() => {
         setUploadingFiles([]);
+        if (onUploadComplete) {
+          onUploadComplete();
+        }
       }, 2000);
 
     } catch (error) {

@@ -3,7 +3,7 @@ export const APP_NAME = 'CloudVault';
 export const APP_DESCRIPTION = 'Your personal cloud storage solution';
 
 // File upload constants
-export const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+export const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
 export const ALLOWED_FILE_TYPES = [
   'image/*',
   'video/*',

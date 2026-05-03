@@ -19,12 +19,12 @@ export const fileTypeCategories = {
 
 // File size limits (in bytes)
 export const fileSizeLimits = {
-  image: 10 * 1024 * 1024, // 10MB
-  document: 50 * 1024 * 1024, // 50MB
-  video: 500 * 1024 * 1024, // 500MB
-  audio: 100 * 1024 * 1024, // 100MB
-  archive: 100 * 1024 * 1024, // 100MB
-  default: 100 * 1024 * 1024, // 100MB
+  image: 5 * 1024 * 1024 * 1024, // 5GB
+  document: 5 * 1024 * 1024 * 1024, // 5GB
+  video: 5 * 1024 * 1024 * 1024, // 5GB
+  audio: 5 * 1024 * 1024 * 1024, // 5GB
+  archive: 5 * 1024 * 1024 * 1024, // 5GB
+  default: 5 * 1024 * 1024 * 1024, // 5GB
 } as const;
 
 export interface FileValidationOptions {
