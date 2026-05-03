@@ -12,8 +12,7 @@ vi.mock('@/services/file.service');
 vi.mock('@/components/base/Toast', () => ({
   ToastProvider: ({ children }: any) => <>{children}</>,
   useToast: () => ({
-    showSuccess: vi.fn(),
-    showError: vi.fn(),
+    addToast: vi.fn(),
   }),
 }));
 
@@ -202,6 +201,7 @@ describe('FileUploader', () => {
         providerId: 'test-provider-id',
         folderPath: '',
         onProgress: expect.any(Function),
+        abortController: expect.any(AbortController),
       });
     });
   });
@@ -382,6 +382,7 @@ describe('FileUploader', () => {
         providerId: 'test-provider-id',
         folderPath: '',
         onProgress: expect.any(Function),
+        abortController: expect.any(AbortController),
       });
     });
   });
@@ -417,6 +418,7 @@ describe('FileUploader', () => {
         providerId: 'test-provider-id',
         folderPath: 'documents',
         onProgress: expect.any(Function),
+        abortController: expect.any(AbortController),
       });
     });
   });

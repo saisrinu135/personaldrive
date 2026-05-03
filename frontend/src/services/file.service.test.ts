@@ -48,15 +48,28 @@ describe('File Service', () => {
         onProgress: progressCallback,
       };
 
-      vi.mocked(axiosInstance.post).mockResolvedValue(apiEnvelope(fileData));
+      const initResponse = { upload_id: 'up123', s3_key: 'test.txt', filename: 'test.txt' };
+      const partResponse = { PartNumber: 1, ETag: 'etag123' };
+      
+      vi.mocked(axiosInstance.post)
+        .mockResolvedValueOnce(apiEnvelope(initResponse)) // init
+        .mockResolvedValueOnce(apiEnvelope(partResponse)) // part 1
+        .mockResolvedValueOnce(apiEnvelope(fileData)); // complete
 
       const result = await uploadFile(mockFile, options);
 
-      // URL now uses query param, not path param
-      expect(axiosInstance.post).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/objects/upload?provider_id=provider-1'),
-        expect.any(FormData),
-        expect.objectContaining({ headers: { 'Content-Type': 'multipart/form-data' } })
+      // Verify init
+      expect(axiosInstance.post).toHaveBeenNthCalledWith(1,
+        expect.stringContaining('/api/v1/objects/multipart/init?provider_id=provider-1'),
+        expect.anything(),
+        expect.anything()
+      );
+      
+      // Verify complete
+      expect(axiosInstance.post).toHaveBeenNthCalledWith(3,
+        expect.stringContaining('/api/v1/objects/multipart/complete?provider_id=provider-1'),
+        expect.anything(),
+        expect.anything()
       );
 
       expect(result).toEqual(fileData);
@@ -90,13 +103,19 @@ describe('File Service', () => {
       };
 
       const options: FileUploadOptions = { providerId: 'provider-1', folderPath: 'documents' };
-      vi.mocked(axiosInstance.post).mockResolvedValue(apiEnvelope(fileData));
+      const initResponse = { upload_id: 'up123', s3_key: 'documents/test.txt', filename: 'test.txt' };
+      const partResponse = { PartNumber: 1, ETag: 'etag123' };
+
+      vi.mocked(axiosInstance.post)
+        .mockResolvedValueOnce(apiEnvelope(initResponse))
+        .mockResolvedValueOnce(apiEnvelope(partResponse))
+        .mockResolvedValueOnce(apiEnvelope(fileData));
 
       await uploadFile(mockFile, options);
 
-      expect(axiosInstance.post).toHaveBeenCalledWith(
-        expect.stringContaining('folder_path=documents'),
-        expect.any(FormData),
+      expect(axiosInstance.post).toHaveBeenNthCalledWith(1,
+        expect.stringContaining('/api/v1/objects/multipart/init'),
+        expect.objectContaining({ folder_path: 'documents' }),
         expect.anything()
       );
     });
@@ -116,38 +135,34 @@ describe('File Service', () => {
       });
 
       vi.mocked(axiosInstance.post)
+        .mockResolvedValueOnce(apiEnvelope({ upload_id: 'u1', s3_key: 'f1', filename: 'f1' }))
+        .mockResolvedValueOnce(apiEnvelope({ PartNumber: 1, ETag: 'e1' }))
         .mockResolvedValueOnce(makeResponse(0, mockFiles[0]))
+        .mockResolvedValueOnce(apiEnvelope({ upload_id: 'u2', s3_key: 'f2', filename: 'f2' }))
+        .mockResolvedValueOnce(apiEnvelope({ PartNumber: 1, ETag: 'e2' }))
         .mockResolvedValueOnce(makeResponse(1, mockFiles[1]));
 
       const results = await uploadFiles(mockFiles, { providerId: 'provider-1' });
 
       expect(results).toHaveLength(2);
-      expect(axiosInstance.post).toHaveBeenCalledTimes(2);
+      expect(axiosInstance.post).toHaveBeenCalledTimes(6); // 3 calls per file
     });
   });
 
   describe('downloadFile', () => {
-    it('should trigger browser download via blob streaming', async () => {
-      const mockBlob = new Blob(['hello'], { type: 'text/plain' });
-      vi.mocked(axiosInstance.get).mockResolvedValue({
-        data: mockBlob,
-        headers: { 'content-disposition': 'attachment; filename=test.txt' },
-      });
-
-      global.URL.createObjectURL = vi.fn().mockReturnValue('blob:mock');
-      global.URL.revokeObjectURL = vi.fn();
+    it('should trigger browser download via direct link', async () => {
+      vi.mocked(axiosInstance.get).mockResolvedValue(apiEnvelope({ url: 'https://s3.example.com/download' }));
 
       const mockLink = { href: '', download: '', click: vi.fn() };
       const createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue(mockLink as unknown as HTMLElement);
       const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink as unknown as Node);
       const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink as unknown as Node);
 
-      await downloadFile('123');
+      await downloadFile('123', 'test.txt');
 
-      expect(axiosInstance.get).toHaveBeenCalledWith(
-        '/api/v1/objects/123/download',
-        expect.objectContaining({ responseType: 'blob' })
-      );
+      expect(axiosInstance.get).toHaveBeenCalledWith('/api/v1/objects/123/direct-link?ttl=3600');
+      expect(mockLink.href).toBe('https://s3.example.com/download');
+      expect(mockLink.download).toBe('test.txt');
       expect(mockLink.click).toHaveBeenCalled();
 
       createElementSpy.mockRestore();
