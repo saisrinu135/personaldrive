@@ -82,7 +82,7 @@ interface ToastContainerProps {
 
 const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onRemove }) => {
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center space-y-3 w-full max-w-md pointer-events-none px-4">
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-3 w-full max-w-sm pointer-events-none px-4 sm:px-0">
       <AnimatePresence mode="popLayout">
         {toasts.map(toast => (
           <ToastItem key={toast.id} toast={toast} onRemove={onRemove} />
@@ -101,45 +101,44 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
   const getToastStyles = (type: ToastType) => {
     switch (type) {
       case 'success':
-        return 'bg-green-500/10 border-green-500/20 text-green-700 dark:text-green-400';
+        return 'border-l-green-500';
       case 'error':
-        return 'bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400';
+        return 'border-l-red-500';
       case 'warning':
-        return 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400';
+        return 'border-l-amber-500';
       case 'info':
-        return 'bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-400';
+        return 'border-l-blue-500';
       default:
-        return 'bg-background/80 border-border text-foreground';
+        return 'border-l-gray-500';
     }
   };
 
   const getIcon = (type: ToastType) => {
     switch (type) {
       case 'success':
-        return <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />;
+        return <CheckCircle2 className="w-5 h-5 text-green-500" />;
       case 'error':
-        return <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />;
+        return <AlertCircle className="w-5 h-5 text-red-500" />;
       case 'warning':
-        return <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />;
+        return <AlertTriangle className="w-5 h-5 text-amber-500" />;
       case 'info':
-        return <Info className="w-5 h-5 text-blue-600 dark:text-blue-400" />;
+        return <Info className="w-5 h-5 text-blue-500" />;
     }
   };
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 50, scale: 0.8 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.2 } }}
+      initial={{ opacity: 0, x: 50, scale: 0.95 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95, x: 20, transition: { duration: 0.2 } }}
       className={`
-        pointer-events-auto w-auto max-w-full flex items-center gap-3 py-3 px-4 rounded-full border shadow-2xl backdrop-blur-xl
-        ${toast.message ? 'rounded-2xl flex-col items-start gap-1 py-4 px-5' : 'rounded-full'}
+        pointer-events-auto w-full flex items-start gap-3 py-4 px-4 rounded-md border border-border shadow-lg bg-background border-l-4 text-foreground
         ${getToastStyles(toast.type)}
       `}
     >
-      <div className="flex items-center gap-3 w-full">
-        <div className="flex-shrink-0">
+      <div className="flex items-start gap-3 w-full">
+        <div className="flex-shrink-0 mt-0.5">
           {getIcon(toast.type)}
         </div>
         
@@ -148,15 +147,15 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
             {toast.title}
           </p>
           {toast.message && (
-            <p className="text-xs opacity-80 mt-1 line-clamp-2">
+            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
               {toast.message}
             </p>
           )}
           {toast.action && (
-            <div className="mt-2 text-left">
+            <div className="mt-3 text-left">
               <button
                 onClick={toast.action.onClick}
-                className="text-xs font-bold uppercase tracking-wider underline hover:no-underline opacity-90 transition-opacity hover:opacity-100"
+                className="text-xs font-semibold uppercase tracking-widest text-primary hover:text-primary/80 transition-colors"
               >
                 {toast.action.label}
               </button>
