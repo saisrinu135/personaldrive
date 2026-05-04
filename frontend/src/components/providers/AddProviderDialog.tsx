@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ProviderType, CreateProviderRequest } from '@/types/provider.types';
-import { createProvider, testConnection } from '@/services/provider.service';
+import { useProviderMutations } from '@/hooks/useProviderMutations';
 
 interface AddProviderDialogProps {
   isOpen: boolean;
@@ -36,6 +36,9 @@ export const AddProviderDialog: React.FC<AddProviderDialogProps> = ({ isOpen, on
   const [successMsg, setSuccessMsg] = useState<string>('');
   const [selectedProvider, setSelectedProvider] = useState<typeof providerOptions[0] | null>(null);
   const [useIAMRole, setUseIAMRole] = useState(false);
+
+  // Use the provider mutations hook
+  const { createProvider, testConnection } = useProviderMutations();
 
   const [formData, setFormData] = useState<CreateProviderRequest>({
     name: '',
@@ -117,6 +120,7 @@ export const AddProviderDialog: React.FC<AddProviderDialogProps> = ({ isOpen, on
         ...formData,
         provider_name: formData.provider_name || formData.name,
       });
+      // Cache will be automatically invalidated by the mutation hook
       onSuccess();
       handleClose();
     } catch (err: any) {

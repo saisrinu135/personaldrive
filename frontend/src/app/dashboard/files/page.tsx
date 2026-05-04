@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter, useParams } from 'next/navigation';
 import { 
   Upload, 
   Download, 
@@ -225,6 +225,7 @@ FileListContent.displayName = 'FileListContent';
 export default function FilesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
   const { searchQuery, selectedProvider: selectedProviderId, providers } = useDashboard();
   
   const [files, setFiles] = useState<FileMetadata[]>([]);
@@ -240,27 +241,27 @@ export default function FilesPage() {
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
 
-  // Get folder path from URL
-  const folderPath = searchParams.get('folder') || '';
-  const providerParam = searchParams.get('provider') || '';
+  // Get folder path - support both nested routes and query params
+  const pathParam = params.path;
+  const queryFolderParam = searchParams.get('folder');
+  const folderPath = Array.isArray(pathParam) ? pathParam.join('/') : (pathParam || queryFolderParam || '');
 
   // Helper function to update URL with folder path
   const updateURL = useCallback((folderId: string | null, folderPath: string = '') => {
-    const params = new URLSearchParams(searchParams.toString());
-    
-    if (folderPath) {
-      params.set('folder', folderPath);
-    } else {
-      params.delete('folder');
-    }
+    const params = new URLSearchParams();
     
     if (selectedProvider) {
       params.set('provider', selectedProvider.id);
     }
     
-    const newUrl = `/dashboard/files${params.toString() ? '?' + params.toString() : ''}`;
+    if (folderPath) {
+      params.set('folder', folderPath);
+    }
+    
+    const queryString = params.toString();
+    const newUrl = `/dashboard/files${queryString ? '?' + queryString : ''}`;
     router.replace(newUrl, { scroll: false });
-  }, [router, searchParams, selectedProvider]);
+  }, [router, selectedProvider]);
 
   // Helper function to build folder path from breadcrumbs
   const buildFolderPath = useCallback((breadcrumbList: BreadcrumbItem[]) => {
@@ -298,7 +299,7 @@ export default function FilesPage() {
 
   // Load files and folders when provider or folder changes
   useEffect(() => {
-    console.log('Effect triggered - selectedProvider:', selectedProvider, 'currentFolderId:', currentFolderId);
+    console.log('Effect triggered - selectedProvider:', selectedProvider, 'folderPath:', folderPath);
     if (!selectedProvider) {
       console.log('No selected provider, skipping data fetch');
       return;
@@ -309,9 +310,32 @@ export default function FilesPage() {
         console.log('Starting data fetch for provider:', selectedProvider.id);
         setLoading(true);
         
+        // Resolve folder ID from path
+        let folderId: string | null = null;
+        if (folderPath) {
+          // For now, we'll need to traverse the folder hierarchy
+          // In a real app, you might want to add an API endpoint to get folder ID by path
+          const pathSegments = folderPath.split('/');
+          let currentId: string | null = null;
+          
+          for (const segment of pathSegments) {
+            const folders = await listFolders(selectedProvider.id, currentId || undefined);
+            const folder = folders.find(f => f.name === decodeURIComponent(segment));
+            if (folder) {
+              currentId = folder.id;
+            } else {
+              console.warn(`Folder not found: ${segment}`);
+              break;
+            }
+          }
+          folderId = currentId;
+        }
+        
+        setCurrentFolderId(folderId);
+        
         // Fetch folders
-        console.log('Calling listFolders with:', selectedProvider.id, currentFolderId || undefined);
-        const folderList = await listFolders(selectedProvider.id, currentFolderId || undefined);
+        console.log('Calling listFolders with:', selectedProvider.id, folderId || undefined);
+        const folderList = await listFolders(selectedProvider.id, folderId || undefined);
         console.log('Raw folders API response:', folderList);
         console.log('Number of folders returned:', folderList.length);
         folderList.forEach((folder, index) => {
@@ -327,7 +351,7 @@ export default function FilesPage() {
         // Fetch files
         const response = await listFiles({ 
           providerId: selectedProvider.id,
-          folderId: currentFolderId || undefined,
+          folderId: folderId || undefined,
           search: searchQuery || undefined,
           limit: 50 
         });
@@ -336,27 +360,17 @@ export default function FilesPage() {
         setFiles(fileList);
         
         // Fetch breadcrumbs if we're in a folder
-        if (currentFolderId) {
+        if (folderId) {
           try {
-            const breadcrumbList = await getFolderBreadcrumbs(currentFolderId);
+            const breadcrumbList = await getFolderBreadcrumbs(folderId);
             console.log('Breadcrumbs loaded:', breadcrumbList);
             setBreadcrumbs(breadcrumbList);
-            
-            // Update URL with current folder path if it doesn't match
-            const currentPath = buildFolderPath(breadcrumbList);
-            if (currentPath !== folderPath) {
-              updateURL(currentFolderId, currentPath);
-            }
           } catch (error) {
             console.error('Failed to fetch breadcrumbs:', error);
             setBreadcrumbs([]);
           }
         } else {
           setBreadcrumbs([]);
-          // Clear folder path from URL if we're at root
-          if (folderPath) {
-            updateURL(null);
-          }
         }
       } catch (error) {
         console.error('Failed to fetch data:', error);
@@ -366,7 +380,7 @@ export default function FilesPage() {
     };
 
     fetchData();
-  }, [selectedProvider, currentFolderId, searchQuery]);
+  }, [selectedProvider, folderPath, searchQuery]);
 
   const handleCreateFolder = useCallback(async (name: string) => {
     if (!selectedProvider) return;
@@ -445,7 +459,6 @@ export default function FilesPage() {
 
   const handleFolderClick = useCallback((folder: FolderItem) => {
     console.log('Navigating to folder:', folder.name, folder.id);
-    setCurrentFolderId(folder.id);
     
     // Build new folder path
     const newPath = folderPath ? `${folderPath}/${folder.name}` : folder.name;
@@ -455,8 +468,6 @@ export default function FilesPage() {
   const handleBreadcrumbClick = useCallback((breadcrumb: BreadcrumbItem | null) => {
     console.log('Breadcrumb click:', breadcrumb);
     if (breadcrumb) {
-      setCurrentFolderId(breadcrumb.id);
-      
       // Find the path up to this breadcrumb
       const breadcrumbIndex = breadcrumbs.findIndex(b => b.id === breadcrumb.id);
       const pathSegments = breadcrumbs.slice(0, breadcrumbIndex + 1).map(b => b.name);
@@ -464,7 +475,6 @@ export default function FilesPage() {
       updateURL(breadcrumb.id, newPath);
     } else {
       // Root level
-      setCurrentFolderId(null);
       updateURL(null);
     }
   }, [breadcrumbs, updateURL]);
@@ -550,8 +560,8 @@ export default function FilesPage() {
     [sortedAndFilteredFolders, sortedAndFilteredFiles]
   );
 
-  if (loading) {
-    console.log('Component is loading...');
+  if (loading || !selectedProvider) {
+    console.log('Component is loading or no provider selected...');
     return (
       <div className="flex h-full items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

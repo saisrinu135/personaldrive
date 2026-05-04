@@ -1,15 +1,22 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useRouter } from 'next/navigation';
 import { useDashboard } from './layout';
-import { formatBytes } from '@/services/metrics.service';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { providers, metrics, refetchData } = useDashboard();
+  const { providers } = useDashboard();
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
 
   const getProviderIcon = (type: string) => {
     const icons = {
@@ -27,54 +34,13 @@ export default function DashboardPage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Dashboard
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Welcome back! Here's an overview of your cloud storage.
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetchData()}
-          >
-            Refresh
-          </Button>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          Dashboard
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Welcome back! Here's an overview of your cloud storage.
+        </p>
       </div>
-
-      {/* Overall Metrics */}
-      {metrics && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card className="p-4">
-            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-              Total Storage Used
-            </h3>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatBytes(metrics.total_size_bytes)}
-            </p>
-          </Card>
-          <Card className="p-4">
-            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-              Total Files
-            </h3>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {metrics.total_count.toLocaleString()}
-            </p>
-          </Card>
-          <Card className="p-4">
-            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-              Storage Accounts
-            </h3>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {providers.length}
-            </p>
-          </Card>
-        </div>
-      )}
 
       {/* Storage Accounts */}
       <div>
@@ -113,16 +79,27 @@ export default function DashboardPage() {
               <Card
                 key={account.id}
                 className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => router.push('/dashboard/files')}
+                onClick={() => router.push('/dashboard/files?provider=' + account.id)}
               >
-                <div className="flex items-center space-x-3 mb-3">
-                  <span className="text-2xl">{getProviderIcon(account.provider_type)}</span>
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 dark:text-white">{account.name}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
-                      {account.provider_type}
-                    </p>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">{getProviderIcon(account.provider_type)}</span>
+                    <div>
+                      <h3 className="font-medium text-gray-900 dark:text-white">{account.name}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
+                        {account.provider_type}
+                      </p>
+                    </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    ⋯
+                  </Button>
                 </div>
 
                 <div className="space-y-2">
@@ -136,14 +113,7 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full" 
-                      style={{ 
-                        width: account.storage_limit_gb 
-                          ? `${Math.min(100, ((account.usage?.total_size_gb || 0) / account.storage_limit_gb) * 100)}%`
-                          : '0%'
-                      }}
-                    ></div>
+                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '25%' }}></div>
                   </div>
                 </div>
               </Card>

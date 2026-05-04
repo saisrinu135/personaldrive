@@ -3,6 +3,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ErrorBoundary } from '@/components/base/ErrorBoundary';
 import { ToastProvider } from '@/components/base/Toast';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { QueryClientProvider } from '@/lib/query-client';
 import { ServiceWorkerRegistration } from '@/components/pwa/ServiceWorkerRegistration';
 import './globals.css';
 
@@ -41,13 +42,15 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/20">
         <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
-          <ErrorBoundary>
-            <ToastProvider>
-              <AuthProvider>
-                {children}
-              </AuthProvider>
-            </ToastProvider>
-          </ErrorBoundary>
+          <QueryClientProvider>
+            <ErrorBoundary>
+              <ToastProvider>
+                <AuthProvider>
+                  {children}
+                </AuthProvider>
+              </ToastProvider>
+            </ErrorBoundary>
+          </QueryClientProvider>
         </ThemeProvider>
         <ServiceWorkerRegistration />
       </body>

@@ -18,14 +18,16 @@ interface BreadcrumbsProps {
 export const Breadcrumbs: React.FC<BreadcrumbsProps> = memo(({ items, className = '' }) => {
   return (
     <nav className={`flex items-center space-x-1 text-sm ${className}`}>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={items[0]?.onClick}
-        className="p-1 h-auto text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-      >
-        <Home className="w-4 h-4" />
-      </Button>
+      {items.length > 0 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={items[0]?.onClick}
+          className="p-1 h-auto text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+        >
+          <Home className="w-4 h-4" />
+        </Button>
+      )}
       
       {items.map((item, index) => (
         <React.Fragment key={`${item.label}-${index}`}>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -20,8 +20,9 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
-import { listProviders } from '@/services/provider.service';
-import { Provider, ProviderType } from '@/types/provider.types';
+import { useProvidersWithMetrics } from '@/hooks/useQueries';
+import { ProviderType } from '@/types/provider.types';
+import { formatBytes } from '@/services/metrics.service';
 
 interface DashboardSidebarProps {
   collapsed?: boolean;
@@ -51,28 +52,13 @@ function getProviderIcon(type: ProviderType) {
   }
 }
 
-function formatGB(bytes?: number) {
-  if (!bytes) return '0 GB';
-  const gb = bytes / (1024 ** 3);
-  return gb < 1 ? `${(gb * 1024).toFixed(0)} MB` : `${gb.toFixed(1)} GB`;
-}
-
-function formatGBUsed(gb?: number) {
-  if (!gb) return '0 GB';
-  return gb < 1 ? `${(gb * 1024).toFixed(0)} MB` : `${gb.toFixed(1)} GB`;
-}
-
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   collapsed = false,
   onToggle,
 }) => {
   const pathname = usePathname();
   const { logout, user } = useAuth();
-  const [providers, setProviders] = useState<Provider[]>([]);
-
-  useEffect(() => {
-    listProviders().then(setProviders).catch(() => {});
-  }, []);
+  const { providers, metrics } = useProvidersWithMetrics();
 
   // Compute initials for user avatar
   const initials = user?.name
@@ -172,7 +158,11 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             <div className="space-y-2">
               {providers.map(provider => {
                 const meta = getProviderIcon(provider.provider_type);
-                const usedGb = provider.usage?.total_size_gb ?? 0;
+                const providerMetrics = metrics?.by_provider?.find(
+                  (m: any) => m.provider_id === provider.id
+                );
+                const usedBytes = providerMetrics?.storage_used_bytes || 0;
+                const usedGb = usedBytes / (1024 * 1024 * 1024);
                 const limitGb = provider.storage_limit_gb ?? 0;
                 const pct = limitGb > 0 ? Math.min(100, (usedGb / limitGb) * 100) : 0;
                 const displayName = provider.provider_name || provider.name;
@@ -193,7 +183,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                       {limitGb > 0 ? (
                         <>
                           <p className="text-[10px] text-muted-foreground mt-0.5">
-                            {formatGBUsed(usedGb)} / {formatGBUsed(limitGb)}
+                            {formatBytes(usedBytes)} / {formatBytes(limitGb * 1024 * 1024 * 1024)}
                           </p>
                           <div className="mt-1 h-1 bg-border rounded-full overflow-hidden">
                             <div
@@ -204,7 +194,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                         </>
                       ) : (
                         <p className="text-[10px] text-muted-foreground mt-0.5">
-                          {formatGB(provider.usage?.total_size_bytes)} used
+                          {formatBytes(usedBytes)} used
                         </p>
                       )}
                     </div>

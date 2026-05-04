@@ -25,8 +25,20 @@ export interface TypeMetrics {
  * Get overall storage metrics for the current user
  */
 export const getStorageMetrics = async (): Promise<StorageMetrics> => {
-  const response = await axiosInstance.get('/api/v1/metrics/storage');
-  return response.data.data;
+  try {
+    console.log('getStorageMetrics called');
+    const response = await axiosInstance.get('/api/v1/metrics/storage');
+    console.log('Raw metrics response:', response.data);
+    
+    if (!response.data || !response.data.data) {
+      throw new Error('Invalid metrics response format');
+    }
+    
+    return response.data.data;
+  } catch (error) {
+    console.error('Error in getStorageMetrics:', error);
+    throw error;
+  }
 };
 
 /**

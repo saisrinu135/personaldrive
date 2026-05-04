@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, createContext, useContext } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { MobileNavigation } from '@/components/navigation/MobileNavigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { listProviders } from '@/services/provider.service';
-import { getStorageMetrics } from '@/services/metrics.service';
+import { useProvidersWithMetrics } from '@/hooks/useQueries';
 import { Provider } from '@/types/provider.types';
 import { useRouter } from 'next/navigation';
 
@@ -17,6 +16,9 @@ interface DashboardContextType {
   selectedProvider: string;
   setSelectedProvider: (providerId: string) => void;
   providers: Provider[];
+  metrics: any;
+  metricsLoading: boolean;
+  refetchData: () => Promise<void>;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -34,69 +36,36 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, logout } = useAuth();
+  console.log('DashboardLayout rendering with new query hooks');
+  const { user } = useAuth();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProviders = async () => {
-      try {
-        console.log('Fetching providers and metrics...');
-        const providersResponse = await listProviders();
-        console.log('Providers response:', providersResponse);
-        
-        // Try to get metrics, but don't fail if it doesn't work
-        let metricsResponse = null;
-        try {
-          metricsResponse = await getStorageMetrics();
-          console.log('Metrics response:', metricsResponse);
-        } catch (metricsError) {
-          console.warn('Failed to fetch metrics, continuing without them:', metricsError);
-        }
-        
-        // Merge providers with their usage metrics if available
-        const providersWithUsage = providersResponse.map(provider => {
-          const providerMetrics = metricsResponse?.by_provider?.find(
-            metric => metric.provider_id === provider.id
-          );
-          
-          return {
-            ...provider,
-            usage: providerMetrics ? {
-              provider_id: providerMetrics.provider_id,
-              provider_name: providerMetrics.provider_name,
-              total_size_bytes: providerMetrics.storage_used_bytes,
-              total_objects: providerMetrics.file_count,
-              total_size_mb: providerMetrics.storage_used_bytes / (1024 * 1024),
-              total_size_gb: providerMetrics.storage_used_bytes / (1024 * 1024 * 1024)
-            } : {
-              provider_id: provider.id,
-              provider_name: provider.name,
-              total_size_bytes: 0,
-              total_objects: 0,
-              total_size_mb: 0,
-              total_size_gb: 0
-            }
-          };
-        });
-        
-        console.log('Final providers with usage:', providersWithUsage);
-        setProviders(providersWithUsage || []);
-        if (providersWithUsage?.length > 0) {
-          setSelectedProvider(providersWithUsage[0].id);
-        }
-      } catch (error) {
-        console.error('Failed to fetch providers:', error);
-      } finally {
-        setLoading(false);
-      }
+  
+  // Use the combined query hook with error boundary
+  let queryResult;
+  try {
+    queryResult = useProvidersWithMetrics();
+  } catch (error) {
+    console.error('Query hook error:', error);
+    // Fallback to empty state
+    queryResult = {
+      providers: [],
+      metrics: null,
+      isLoading: false,
+      error: error instanceof Error ? error : new Error('Failed to initialize queries'),
+      refetch: async () => {},
     };
+  }
+  
+  const { providers, metrics, isLoading, error, refetch } = queryResult;
 
-    fetchProviders();
-  }, []);
+  // Set initial selected provider
+  React.useEffect(() => {
+    if (providers.length > 0 && !selectedProvider) {
+      setSelectedProvider(providers[0].id);
+    }
+  }, [providers, selectedProvider]);
 
   const handleAddProvider = () => {
     router.push('/dashboard/providers?add=true');
@@ -116,10 +85,27 @@ export default function DashboardLayout({
 
   const selectedProviderData = providers.find((p) => p.id === selectedProvider);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-2">Failed to load dashboard data</p>
+          <p className="text-sm text-gray-600 mb-4">{error instanceof Error ? error.message : String(error)}</p>
+          <button 
+            onClick={() => refetch()}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -130,7 +116,10 @@ export default function DashboardLayout({
       setSearchQuery,
       selectedProvider,
       setSelectedProvider,
-      providers
+      providers,
+      metrics,
+      metricsLoading: isLoading,
+      refetchData: refetch
     }}>
       <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
         {/* Desktop Sidebar */}
@@ -140,6 +129,7 @@ export default function DashboardLayout({
             providers={providers}
             onProviderSelect={setSelectedProvider}
             onAddProvider={handleAddProvider}
+            metrics={metrics}
           />
         </div>
         

@@ -22,6 +22,7 @@ interface SidebarProps {
   providers: Provider[];
   onProviderSelect: (providerId: string) => void;
   onAddProvider: () => void;
+  metrics?: any;
 }
 
 const providerIcons = {
@@ -35,7 +36,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   selectedProvider,
   providers,
   onProviderSelect,
-  onAddProvider
+  onAddProvider,
+  metrics
 }) => {
   const router = useRouter();
   const pathname = usePathname();
@@ -115,32 +117,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <div className="space-y-1">
-          {providers.map((provider) => (
-            <div
-              key={provider.id}
-              onClick={() => onProviderSelect(provider.id)}
-              className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors ${
-                selectedProvider === provider.id
-                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-              }`}
-            >
-              <div className="flex items-center space-x-2 flex-1 min-w-0">
-                <span className="text-sm">
-                  {providerIcons[provider.provider_type as keyof typeof providerIcons] || '☁️'}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm truncate">
-                    {provider.name}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {formatBytes(provider.usage?.total_size_bytes || 0)} • {provider.usage?.total_objects || 0} files
+          {providers.map((provider) => {
+            const providerMetrics = metrics?.by_provider?.find(
+              (m: any) => m.provider_id === provider.id
+            );
+            
+            return (
+              <div
+                key={provider.id}
+                onClick={() => onProviderSelect(provider.id)}
+                className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors ${
+                  selectedProvider === provider.id
+                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                }`}
+              >
+                <div className="flex items-center space-x-2 flex-1 min-w-0">
+                  <span className="text-sm">
+                    {providerIcons[provider.provider_type as keyof typeof providerIcons] || '☁️'}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm truncate">
+                      {provider.name}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {formatBytes(providerMetrics?.storage_used_bytes || 0)} • {providerMetrics?.file_count || 0} files
+                    </div>
                   </div>
                 </div>
+                <ChevronDown className="w-3 h-3 text-gray-400 flex-shrink-0" />
               </div>
-              <ChevronDown className="w-3 h-3 text-gray-400 flex-shrink-0" />
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

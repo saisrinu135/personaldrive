@@ -21,7 +21,7 @@ import {
 } from '@/services/file.service';
 import { FileItem } from '@/types/file.types';
 import { 
-  FolderResponse, 
+  FolderItem,
   BreadcrumbItem as FolderBreadcrumbItem,
   listFolders, 
   createFolder, 
@@ -49,15 +49,15 @@ export const FileManager: React.FC<FileManagerProps> = ({
   className = '',
 }) => {
   const [files, setFiles] = useState<FileItem[]>([]);
-  const [folders, setFolders] = useState<FolderResponse[]>([]);
+  const [folders, setFolders] = useState<FolderItem[]>([]);
   const [filteredFiles, setFilteredFiles] = useState<FileItem[]>([]);
-  const [filteredFolders, setFilteredFolders] = useState<FolderResponse[]>([]);
+  const [filteredFolders, setFilteredFolders] = useState<FolderItem[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<{ label: string; onClick?: () => void }[]>([]);
   
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [folderModalMode, setFolderModalMode] = useState<'create' | 'rename'>('create');
-  const [selectedFolder, setSelectedFolder] = useState<FolderResponse | null>(null);
+  const [selectedFolder, setSelectedFolder] = useState<FolderItem | null>(null);
   const [searchResults, setSearchResults] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -71,7 +71,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
     try {
       const [filesRes, foldersRes] = await Promise.all([
         listFiles({ providerId, folderId: currentFolderId || undefined }),
-        listFolders(providerId, currentFolderId)
+        listFolders(providerId, currentFolderId || undefined)
       ]);
       
       // Convert API response to FileItem format
@@ -92,10 +92,13 @@ export const FileManager: React.FC<FileManagerProps> = ({
       if (currentFolderId) {
         const crumbs = await getFolderBreadcrumbs(currentFolderId);
         // Transform folder breadcrumbs to component breadcrumbs
-        const transformedCrumbs = crumbs.map((crumb) => ({
-          label: crumb.name,
-          onClick: () => setCurrentFolderId(crumb.id)
-        }));
+        const transformedCrumbs = [
+          { label: 'Root', onClick: () => setCurrentFolderId(null) },
+          ...crumbs.map((crumb) => ({
+            label: crumb.name,
+            onClick: () => setCurrentFolderId(crumb.id)
+          }))
+        ];
         setBreadcrumbs(transformedCrumbs);
       } else {
         setBreadcrumbs([]);
@@ -148,16 +151,16 @@ export const FileManager: React.FC<FileManagerProps> = ({
 
   const handleFolderSubmit = async (name: string) => {
     if (folderModalMode === 'create') {
-      await createFolder(providerId, name, currentFolderId);
+      await createFolder(providerId, { name, parent_id: currentFolderId || undefined });
       addToast({ type: 'success', title: 'Folder created', message: `Created folder "${name}"` });
     } else if (folderModalMode === 'rename' && selectedFolder) {
-      await updateFolder(selectedFolder.id, name);
+      await updateFolder(selectedFolder.id, { name });
       addToast({ type: 'success', title: 'Folder renamed', message: `Renamed folder to "${name}"` });
     }
     await loadItems();
   };
 
-  const handleDeleteFolder = async (folder: FolderResponse) => {
+  const handleDeleteFolder = async (folder: FolderItem) => {
     if (window.confirm(`Are you sure you want to delete folder "${folder.name}"? This action cannot be undone.`)) {
       try {
         await deleteFolder(folder.id);

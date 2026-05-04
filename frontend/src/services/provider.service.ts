@@ -72,10 +72,25 @@ export const createProvider = async (data: CreateProviderRequest): Promise<Provi
  * Backend: GET /api/v1/providers/
  */
 export const listProviders = async (params?: ListProvidersParams): Promise<Provider[]> => {
-  const response = await axiosInstance.get<APIResponse<Provider[]>>('/api/v1/providers/', {
-    params,
-  });
-  return response.data.data;
+  try {
+    console.log('listProviders called with params:', params);
+    const response = await axiosInstance.get<APIResponse<Provider[]>>('/api/v1/providers/', {
+      params,
+    });
+    console.log('Raw providers response:', response.data);
+    
+    if (!response.data || !response.data.data) {
+      throw new Error('Invalid providers response format');
+    }
+    
+    return response.data.data;
+  } catch (error) {
+    console.error('Error in listProviders:', error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(`Failed to fetch providers: ${String(error)}`);
+  }
 };
 
 /**

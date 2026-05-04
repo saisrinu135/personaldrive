@@ -25,7 +25,7 @@ import { FileItem } from '@/types/file.types';
 import { downloadFile, deleteFile } from '@/services/file.service';
 import axiosInstance from '@/lib/axios';
 import { FilePreviewModal } from './FilePreviewModal';
-import { FolderResponse } from '@/services/folder.service';
+import { FolderItem } from '@/services/folder.service';
 import { Folder, Pencil } from 'lucide-react';
 
 export interface FileListProps {
@@ -38,10 +38,10 @@ export interface FileListProps {
   providerId: string;
   className?: string;
   viewMode?: 'grid' | 'list';
-  folders?: FolderResponse[];
-  onFolderClick?: (folder: FolderResponse) => void;
-  onFolderDelete?: (folder: FolderResponse) => void;
-  onFolderRename?: (folder: FolderResponse) => void;
+  folders?: FolderItem[];
+  onFolderClick?: (folder: FolderItem) => void;
+  onFolderDelete?: (folder: FolderItem) => void;
+  onFolderRename?: (folder: FolderItem) => void;
 }
 
 interface FileWithActions extends FileItem {
@@ -659,7 +659,7 @@ export default FileList;
 
 // Folder Item Components
 interface FolderItemProps {
-  folder: FolderResponse;
+  folder: FolderItem;
   onClick: () => void;
   onDelete: () => void;
   onRename: () => void;

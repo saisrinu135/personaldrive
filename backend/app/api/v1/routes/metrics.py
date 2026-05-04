@@ -1,16 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from sqlalchemy import func, select
-from typing import List
 
-from app.core.deps import get_current_user, get_db, CurrentUser, Database
-from app.models.user import User
+from app.core.deps import CurrentUser, Database
 from app.models.provider import StorageProvider
 from app.models.object import Object
+
 from app.schemas.common import StorageMetrics, ProviderMetrics
+from app.schemas.common import APIResponse
 
-router = APIRouter()
+router = APIRouter(prefix='/metrics', tags=['metrics'])
 
-@router.get("/storage", response_model=StorageMetrics)
+
+@router.get("/storage")
 async def get_storage_metrics(
     current_user: CurrentUser,
     db: Database
@@ -57,7 +58,7 @@ async def get_storage_metrics(
     )
     type_breakdown = type_query.all()
     
-    return StorageMetrics(
+    metrics = StorageMetrics(
         total_size_bytes=total_result.total_size or 0,
         total_count=total_result.total_files or 0,
         by_provider=[
@@ -77,8 +78,10 @@ async def get_storage_metrics(
             } for t in type_breakdown
         ]
     )
+    
+    return APIResponse(data=metrics)
 
-@router.get("/providers/{provider_id}", response_model=ProviderMetrics)
+@router.get("/providers/{provider_id}")
 async def get_provider_metrics(
     provider_id: str,
     current_user: CurrentUser,
@@ -108,10 +111,12 @@ async def get_provider_metrics(
     )
     metrics = metrics_query.first()
     
-    return ProviderMetrics(
+    provider_metrics = ProviderMetrics(
         provider_id=str(provider.id),
         provider_name=provider.name,
         provider_type=provider.provider_type,
         storage_used_bytes=metrics.storage_used or 0,
         file_count=metrics.file_count or 0
     )
+    
+    return APIResponse(data=provider_metrics)
