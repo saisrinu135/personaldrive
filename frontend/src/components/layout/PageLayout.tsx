@@ -53,7 +53,11 @@ const PageLayout: React.FC<PageLayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen relative overflow-hidden bg-background">
+      {/* Atmospheric Background Gradients */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-[100px] pointer-events-none" />
+
       {/* Mobile Sidebar Backdrop */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -76,7 +80,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
             {/* Desktop Sidebar */}
             <aside
               className={cn(
-                'hidden lg:flex flex-col bg-card border-r border-border',
+                'hidden lg:flex flex-col glass-panel z-10',
                 'transition-[width] duration-300 ease-in-out overflow-hidden',
                 sidebarCollapsed ? 'w-16' : 'w-64'
               )}
@@ -102,7 +106,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
                     stiffness: 300,
                     damping: 30,
                   }}
-                  className="fixed top-0 left-0 z-50 h-full w-80 bg-card border-r border-border shadow-lg lg:hidden"
+                  className="fixed top-0 left-0 z-50 h-full w-80 glass-panel shadow-2xl lg:hidden"
                   aria-label="Mobile sidebar navigation"
                 >
                   <div className="flex items-center justify-between p-4 border-b border-border">
@@ -131,7 +135,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Page Header */}
-          <header className="bg-background border-b border-border px-4 py-4 lg:px-6">
+          <header className="glass backdrop-blur-md border-b border-white/5 px-4 py-4 lg:px-6 z-10">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 {/* Mobile Sidebar Toggle */}
@@ -197,7 +201,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({
 
           {/* Page Content */}
           <main
-            className="flex-1 overflow-auto bg-background"
+            className="flex-1 overflow-auto z-10 relative"
             role="main"
             aria-label="Main content"
           >

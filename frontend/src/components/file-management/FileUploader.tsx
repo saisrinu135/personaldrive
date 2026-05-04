@@ -294,11 +294,15 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Main drop zone */}
-      <Card
+      <div
         className={`
-          relative overflow-hidden transition-all duration-200 cursor-pointer
-          ${isDragOver ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' : 'border-dashed border-gray-300 dark:border-gray-600'}
-          ${disabled || isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:border-gray-400 dark:hover:border-gray-500'}
+          relative overflow-hidden transition-all duration-300 ease-out cursor-pointer rounded-2xl
+          border-2 border-dashed
+          ${isDragOver 
+            ? 'border-primary bg-primary/5 shadow-[0_0_30px_rgba(var(--primary),0.15)]' 
+            : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 backdrop-blur-sm'
+          }
+          ${disabled || isUploading ? 'opacity-50 cursor-not-allowed' : ''}
         `}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -314,26 +318,23 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
           >
             <Upload 
               className={`
-                w-12 h-12 mx-auto
-                ${isDragOver ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'}
+                w-10 h-10 mx-auto transition-colors duration-300
+                ${isDragOver ? 'text-primary' : 'text-muted-foreground/60'}
               `} 
             />
           </motion.div>
           
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+          <h3 className="text-lg font-semibold text-foreground tracking-tight mb-2">
             {isDragOver ? 'Drop files here' : 'Upload files'}
           </h3>
           
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Drag and drop files here, or click to select files
+          <p className="text-sm text-muted-foreground mb-6 font-medium">
+            Drag and drop files here, or click to browse
           </p>
           
-          <div className="text-xs text-gray-400 dark:text-gray-500 space-y-1">
-            <p>Maximum file size: {formatFileSize(maxSize)}</p>
-            {accept.length > 0 && (
-              <p>Accepted types: {accept.join(', ')}</p>
-            )}
-            {multiple && <p>Multiple files supported</p>}
+          <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground/70 font-medium">
+            <span className="bg-white/5 px-3 py-1 rounded-full border border-white/10">Max {formatFileSize(maxSize)}</span>
+            {multiple && <span className="bg-white/5 px-3 py-1 rounded-full border border-white/10">Multiple files</span>}
           </div>
         </div>
 
@@ -347,23 +348,28 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
           className="hidden"
           disabled={disabled || isUploading}
         />
-      </Card>
+      </div>
 
       {/* Provider Selector if "All Providers" is currently active globally */}
       {!providerId && providers && providers.length > 0 && (
-        <div className="p-4 mt-2 border border-border bg-card rounded-xl text-sm shadow-sm flex flex-col sm:flex-row sm:items-center gap-4">
-          <label className="font-semibold text-foreground whitespace-nowrap">
-            Destination:
+        <div className="p-4 mt-2 border border-white/10 bg-white/5 backdrop-blur-md rounded-xl text-sm shadow-sm flex flex-col sm:flex-row sm:items-center gap-4 transition-all hover:bg-white/10">
+          <label className="font-medium text-foreground whitespace-nowrap text-xs uppercase tracking-wider opacity-80">
+            Destination Provider
           </label>
-          <select 
-            value={localProviderId} 
-            onChange={e => setLocalProviderId(e.target.value)}
-            className="flex-1 w-full p-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            {providers.map(p => (
-              <option key={p.id} value={p.id}>{p.provider_name} {p.is_active ? '' : '(Inactive)'}</option>
-            ))}
-          </select>
+          <div className="relative flex-1">
+            <select 
+              value={localProviderId} 
+              onChange={e => setLocalProviderId(e.target.value)}
+              className="w-full appearance-none bg-transparent border-b border-white/20 py-2 pl-2 pr-8 text-sm font-medium focus:outline-none focus:border-primary transition-colors text-foreground cursor-pointer"
+            >
+              {providers.map(p => (
+                <option key={p.id} value={p.id} className="bg-neutral-900">{p.provider_name} {p.is_active ? '' : '(Inactive)'}</option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+          </div>
         </div>
       )}
 
@@ -409,79 +415,81 @@ const FileUploadItem: React.FC<FileUploadItemProps> = ({
   const getStatusIcon = () => {
     switch (progress.status) {
       case 'completed':
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
       case 'error':
-        return <AlertCircle className="w-5 h-5 text-red-500" />;
+        return <AlertCircle className="w-4 h-4 text-red-500" />;
+      case 'uploading':
+        return <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }}><Upload className="w-4 h-4 text-primary" /></motion.div>;
       default:
-        return <File className="w-5 h-5 text-gray-400" />;
+        return <File className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
   const getStatusColor = () => {
     switch (progress.status) {
       case 'completed':
-        return 'bg-green-500';
+        return 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]';
       case 'error':
-        return 'bg-red-500';
+        return 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]';
       case 'uploading':
-        return 'bg-blue-500';
+        return 'bg-primary shadow-[0_0_10px_rgba(var(--primary),0.4)]';
       default:
-        return 'bg-gray-300';
+        return 'bg-muted';
     }
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+      initial={{ opacity: 0, y: 10, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+      className="flex items-center space-x-4 p-4 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl transition-all hover:bg-white/10"
     >
-      {getStatusIcon()}
+      <div className="flex-shrink-0 p-2 bg-black/20 rounded-lg">
+        {getStatusIcon()}
+      </div>
       
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+      <div className="flex-1 min-w-0 py-1">
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-sm font-semibold text-foreground truncate pr-4">
             {file.name}
           </p>
-          <span className="text-xs text-gray-500 dark:text-gray-400">
+          <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
             {formatFileSize(file.size)}
           </span>
         </div>
         
         {progress.status === 'error' && progress.error && (
-          <p className="text-xs text-red-500 mb-2">{progress.error}</p>
+          <p className="text-xs font-medium text-red-400 mb-2">{progress.error}</p>
         )}
         
         {(progress.status === 'uploading' || progress.status === 'pending') && (
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden">
             <motion.div
-              className={`h-2 rounded-full ${getStatusColor()}`}
+              className={`h-full rounded-full ${getStatusColor()}`}
               initial={{ width: 0 }}
               animate={{ width: `${progress.progress}%` }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
             />
           </div>
         )}
         
         {progress.status === 'completed' && (
-          <p className="text-xs text-green-600 dark:text-green-400">Upload completed</p>
+          <p className="text-xs font-medium text-green-400">Upload completed</p>
         )}
       </div>
       
       {canRemove && (
-        <Button
-          variant="ghost"
-          size="sm"
+        <button
           onClick={(e) => {
             e.stopPropagation();
             onRemove();
           }}
-          className="p-1 h-auto"
+          className="flex-shrink-0 p-2 text-muted-foreground hover:text-foreground hover:bg-white/10 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 opacity-60 hover:opacity-100"
           title={progress.status === 'uploading' ? 'Cancel Upload' : 'Remove'}
         >
           <X className="w-4 h-4" />
-        </Button>
+        </button>
       )}
     </motion.div>
   );

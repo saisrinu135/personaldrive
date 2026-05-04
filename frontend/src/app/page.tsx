@@ -88,13 +88,13 @@ export default function Home() {
   const { isAuthenticated, user, isLoading } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen relative overflow-hidden bg-background">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         {/* Background decoration */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-5" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
         
         <div className="relative container mx-auto px-4 py-20 lg:py-32">
           <motion.div
@@ -158,7 +158,7 @@ export default function Home() {
             {isAuthenticated && user && (
               <motion.div
                 variants={fadeInUp}
-                className="bg-card border rounded-lg p-4 max-w-md mx-auto"
+                className="glass-card p-4 max-w-md mx-auto"
               >
                 <p className="text-sm text-muted-foreground">Welcome back,</p>
                 <p className="font-semibold text-lg">{user.name}</p>
@@ -182,8 +182,8 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 lg:py-32 bg-muted/30">
-        <div className="container mx-auto px-4">
+      <section className="py-20 lg:py-32 relative">
+        <div className="container mx-auto px-4 relative z-10">
           <motion.div
             initial="initial"
             whileInView="animate"
@@ -217,7 +217,7 @@ export default function Home() {
               <motion.div
                 key={index}
                 variants={scaleIn}
-                className="bg-card border rounded-xl p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                className="glass-card p-6 hover:shadow-glow transition-all duration-300 hover:-translate-y-1"
               >
                 <div className="text-primary mb-4">
                   {feature.icon}
@@ -283,22 +283,22 @@ export default function Home() {
             >
               <div className="bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl p-8 lg:p-12">
                 <div className="grid grid-cols-2 gap-6">
-                  <div className="bg-card border rounded-lg p-4 text-center">
+                  <div className="glass-card p-4 text-center hover:shadow-glow transition-all">
                     <Upload className="h-8 w-8 text-primary mx-auto mb-2" />
                     <div className="text-2xl font-bold">Fast</div>
                     <div className="text-sm text-muted-foreground">Upload</div>
                   </div>
-                  <div className="bg-card border rounded-lg p-4 text-center">
+                  <div className="glass-card p-4 text-center hover:shadow-glow transition-all">
                     <Download className="h-8 w-8 text-primary mx-auto mb-2" />
                     <div className="text-2xl font-bold">Instant</div>
                     <div className="text-sm text-muted-foreground">Download</div>
                   </div>
-                  <div className="bg-card border rounded-lg p-4 text-center">
+                  <div className="glass-card p-4 text-center hover:shadow-glow transition-all">
                     <Shield className="h-8 w-8 text-primary mx-auto mb-2" />
                     <div className="text-2xl font-bold">Secure</div>
                     <div className="text-sm text-muted-foreground">Storage</div>
                   </div>
-                  <div className="bg-card border rounded-lg p-4 text-center">
+                  <div className="glass-card p-4 text-center hover:shadow-glow transition-all">
                     <Cloud className="h-8 w-8 text-primary mx-auto mb-2" />
                     <div className="text-2xl font-bold">Cloud</div>
                     <div className="text-sm text-muted-foreground">Sync</div>
@@ -312,8 +312,9 @@ export default function Home() {
 
       {/* CTA Section */}
       {!isAuthenticated && (
-        <section className="py-20 lg:py-32 bg-primary/5">
-          <div className="container mx-auto px-4 text-center">
+        <section className="py-20 lg:py-32 relative">
+          <div className="absolute inset-0 bg-primary/5 blur-3xl pointer-events-none" />
+          <div className="container mx-auto px-4 text-center relative z-10">
             <motion.div
               initial="initial"
               whileInView="animate"
@@ -356,7 +357,7 @@ export default function Home() {
       )}
 
       {/* Footer */}
-      <footer className="border-t bg-muted/30 py-12">
+      <footer className="border-t border-white/5 bg-black/20 backdrop-blur-lg py-12 relative z-10">
         <div className="container mx-auto px-4">
           <div className="text-center">
             <div className="flex items-center justify-center space-x-2 mb-4">

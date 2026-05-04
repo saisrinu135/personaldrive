@@ -13,7 +13,7 @@ vi.mock('axios', async () => {
       ...(actual as any).default,
       create: vi.fn(() => {
         const instance = (actual as any).default.create({
-          baseURL: 'http://localhost:8000',
+          baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
           timeout: 10000,
           headers: {
             'Content-Type': 'application/json',

@@ -6,7 +6,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const cardVariants = cva(
-  'rounded-lg border bg-card text-card-foreground transition-all duration-200',
+  'glass-card text-card-foreground transition-all duration-300',
   {
     variants: {
       padding: {
@@ -48,10 +48,10 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
                 scale: 1.02,
                 y: -2,
                 boxShadow: shadow === 'lg' 
-                  ? '0 25px 50px -12px rgba(0, 0, 0, 0.25)' 
+                  ? '0 0 40px rgba(130, 81, 238, 0.15)' 
                   : shadow === 'md'
-                  ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-                  : '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                  ? '0 0 20px rgba(130, 81, 238, 0.1)'
+                  : '0 4px 20px rgba(0, 0, 0, 0.2)',
               }
             : undefined
         }
