@@ -113,7 +113,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             type={type}
-            value={value !== undefined ? value : (props.onChange ? '' : undefined)}
+            value={value}
             required={required}
             aria-describedby={ariaDescribedBy}
             aria-invalid={Boolean(error)}

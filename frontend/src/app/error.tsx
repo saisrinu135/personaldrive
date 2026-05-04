@@ -59,7 +59,7 @@ export default function Error({ error, reset }: ErrorPageProps) {
         <div className="space-y-3">
           <Button
             onClick={reset}
-            variant="primary"
+            variant="default"
             size="md"
             className="w-full"
           >

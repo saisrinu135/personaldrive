@@ -54,7 +54,7 @@ const PageLayoutExample: React.FC = () => {
       <Button variant="outline" size="sm" icon={<Download className="h-4 w-4" />}>
         Export
       </Button>
-      <Button variant="primary" size="sm" icon={<Plus className="h-4 w-4" />}>
+      <Button variant="default" size="sm" icon={<Plus className="h-4 w-4" />}>
         Upload Files
       </Button>
     </>

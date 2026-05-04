@@ -7,8 +7,8 @@ import { FileMetadata } from '@/types/file.types';
 export interface FileUploadOptions {
   /** UUID of the provider to upload into */
   providerId: string;
-  /** Optional folder prefix, e.g. "documents/invoices" */
-  folderPath?: string;
+  /** Optional folder ID, e.g. "uuid" */
+  folderId?: string;
   /** Progress callback, called during upload */
   onProgress?: (progress: UploadProgress) => void;
   /** Optional abort controller to cancel the upload */
@@ -27,8 +27,8 @@ export interface UploadProgress {
 export interface FileListOptions {
   /** Filter by provider UUID */
   providerId?: string;
-  /** Filter by folder prefix */
-  folderPath?: string;
+  /** Filter by folder ID */
+  folderId?: string;
   search?: string;
   page?: number;
   limit?: number;
@@ -78,7 +78,7 @@ export const uploadFile = async (
   file: File,
   options: FileUploadOptions
 ): Promise<FileUploadResponse> => {
-  const { providerId, folderPath = '', onProgress, abortController } = options;
+  const { providerId, folderId, onProgress, abortController } = options;
   const fileId = `${Date.now()}-${file.name}`;
   
   if (onProgress) {
@@ -95,7 +95,7 @@ export const uploadFile = async (
       {
         filename: file.name,
         content_type: file.type || 'application/octet-stream',
-        folder_path: folderPath
+        folder_id: folderId
       },
       { signal: abortController?.signal }
     );
@@ -152,7 +152,7 @@ export const uploadFile = async (
     
     // 3. Complete multipart upload
     const completeResponse = await axiosInstance.post<APIResponse<FileUploadResponse>>(
-      `/api/v1/objects/multipart/complete?provider_id=${providerId}&s3_key=${encodeURIComponent(s3Key)}&upload_id=${uploadId}&filename=${encodeURIComponent(finalFilename)}&content_type=${encodeURIComponent(file.type || 'application/octet-stream')}`,
+      `/api/v1/objects/multipart/complete?provider_id=${providerId}&s3_key=${encodeURIComponent(s3Key)}&upload_id=${uploadId}&filename=${encodeURIComponent(finalFilename)}&content_type=${encodeURIComponent(file.type || 'application/octet-stream')}${folderId ? `&folder_id=${folderId}` : ''}`,
       {
         size_bytes: file.size,
         parts: parts,
@@ -214,7 +214,7 @@ export const uploadFiles = async (
 export const listFiles = async (
   options: FileListOptions = {}
 ): Promise<FileListResponse> => {
-  const { providerId, folderPath, search, page = 1, limit = 50 } = options;
+  const { providerId, folderId, search, page = 1, limit = 50 } = options;
 
   const params = new URLSearchParams({
     page: page.toString(),
@@ -222,7 +222,7 @@ export const listFiles = async (
   });
 
   if (providerId) params.append('provider_id', providerId);
-  if (folderPath) params.append('folder_path', folderPath);
+  if (folderId) params.append('folder_id', folderId);
   if (search) params.append('search', search);
 
   const response = await axiosInstance.get<APIResponse<FileListResponse>>(

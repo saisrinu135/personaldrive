@@ -25,6 +25,8 @@ import { FileItem } from '@/types/file.types';
 import { downloadFile, deleteFile } from '@/services/file.service';
 import axiosInstance from '@/lib/axios';
 import { FilePreviewModal } from './FilePreviewModal';
+import { FolderResponse } from '@/services/folder.service';
+import { Folder, Pencil } from 'lucide-react';
 
 export interface FileListProps {
   files: FileItem[];
@@ -36,6 +38,10 @@ export interface FileListProps {
   providerId: string;
   className?: string;
   viewMode?: 'grid' | 'list';
+  folders?: FolderResponse[];
+  onFolderClick?: (folder: FolderResponse) => void;
+  onFolderDelete?: (folder: FolderResponse) => void;
+  onFolderRename?: (folder: FolderResponse) => void;
 }
 
 interface FileWithActions extends FileItem {
@@ -53,6 +59,10 @@ export const FileList: React.FC<FileListProps> = ({
   providerId,
   className = '',
   viewMode = 'grid',
+  folders = [],
+  onFolderClick,
+  onFolderDelete,
+  onFolderRename,
 }) => {
   const [filesWithActions, setFilesWithActions] = useState<FileWithActions[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
@@ -244,35 +254,35 @@ export const FileList: React.FC<FileListProps> = ({
   // Loading state
   if (loading) {
     return (
-      <div className={`space-y-4 ${className}`}>
+      <div className={`space-y-2 ${className}`}>
         {Array.from({ length: 6 }).map((_, index) => (
-          <Card key={index} className="animate-pulse">
-            <div className="flex items-center space-x-4 p-4">
-              <div className="w-12 h-12 bg-gray-300 dark:bg-gray-600 rounded"></div>
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
-                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
-              </div>
-              <div className="w-20 h-8 bg-gray-300 dark:bg-gray-600 rounded"></div>
+          <div key={index} className="animate-pulse flex items-center gap-4 px-4 py-3 bg-white rounded-lg border border-border">
+            <div className="w-10 h-10 bg-secondary rounded-lg"></div>
+            <div className="flex-1 space-y-2">
+              <div className="h-3.5 bg-secondary rounded w-3/4"></div>
+              <div className="h-3 bg-secondary rounded w-1/2"></div>
             </div>
-          </Card>
+            <div className="w-16 h-6 bg-secondary rounded"></div>
+          </div>
         ))}
       </div>
     );
   }
 
   // Empty state
-  if (fileItems.length === 0) {
+  if (fileItems.length === 0 && folders.length === 0) {
     return (
-      <Card className={`text-center py-12 ${className}`}>
-        <File className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+      <div className={`flex flex-col items-center justify-center py-16 ${className}`}>
+        <div className="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center mb-4">
+          <File className="w-8 h-8 text-muted-foreground" />
+        </div>
+        <h3 className="text-base font-semibold text-foreground mb-1">
           {emptyMessage}
         </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-muted-foreground">
           Upload some files to get started
         </p>
-      </Card>
+      </div>
     );
   }
 
@@ -281,9 +291,29 @@ export const FileList: React.FC<FileListProps> = ({
       {viewMode === 'grid' ? (
         <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ${className}`}>
           <AnimatePresence>
+            {/* Render Folders */}
+            {folders.map((folder) => (
+              <motion.div
+                key={`folder-${folder.id}`}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.2 }}
+              >
+                <FolderGridItem
+                  folder={folder}
+                  onClick={() => onFolderClick?.(folder)}
+                  onDelete={() => onFolderDelete?.(folder)}
+                  onRename={() => onFolderRename?.(folder)}
+                  formatDate={formatDate}
+                />
+              </motion.div>
+            ))}
+
+            {/* Render Files */}
             {fileItems.map((file) => (
               <motion.div
-                key={file.id}
+                key={`file-${file.id}`}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
@@ -303,11 +333,40 @@ export const FileList: React.FC<FileListProps> = ({
           </AnimatePresence>
         </div>
       ) : (
-        <div className={`space-y-2 ${className}`}>
+      <div className={`space-y-0 ${className}`}>
+          {/* Table header */}
+          <div className="hidden sm:grid sm:grid-cols-[auto_1fr_100px_100px_160px_40px] items-center gap-2 px-4 py-2 border-b border-border text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <div className="w-5" />
+            <span>Name</span>
+            <span>Type</span>
+            <span>Size</span>
+            <span>Last Modified</span>
+            <span />
+          </div>
           <AnimatePresence>
+            {/* Render Folders */}
+            {folders.map((folder) => (
+              <motion.div
+                key={`folder-${folder.id}`}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <FolderListItem
+                  folder={folder}
+                  onClick={() => onFolderClick?.(folder)}
+                  onDelete={() => onFolderDelete?.(folder)}
+                  onRename={() => onFolderRename?.(folder)}
+                  formatDate={formatDate}
+                />
+              </motion.div>
+            ))}
+
+            {/* Render Files */}
             {fileItems.map((file) => (
               <motion.div
-                key={file.id}
+                key={`file-${file.id}`}
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
@@ -373,7 +432,7 @@ const FileGridItem: React.FC<FileItemProps> = ({
   return (
     <Card className="group relative overflow-hidden hover:shadow-lg transition-all duration-200">
       {/* Thumbnail or icon */}
-      <div className="aspect-square bg-gray-100 dark:bg-gray-800 flex items-center justify-center relative overflow-hidden">
+    <div className="aspect-[4/3] bg-slate-50 flex items-center justify-center relative overflow-hidden rounded-t-xl">
         <ImageThumbnailPreview 
           file={file} 
           fallbackIcon={getFileIcon(file)} 
@@ -416,10 +475,10 @@ const FileGridItem: React.FC<FileItemProps> = ({
       
       {/* File info */}
       <div className="p-3">
-        <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate mb-1" title={file.name}>
+        <h4 className="font-medium text-sm text-foreground truncate mb-1" title={file.name}>
           {file.name}
         </h4>
-        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{formatFileSize(file.size)}</span>
           <span>{formatDate(file.uploadDate)}</span>
         </div>
@@ -443,10 +502,9 @@ const FileListItem: React.FC<FileItemProps> = ({
   const isPreviewable = isImage || isVideo || isPdf;
 
   return (
-    <Card className="group hover:shadow-md transition-all duration-200" padding="sm">
-      <div className="flex items-center space-x-4">
-        {/* Thumbnail or icon */}
-        <div className="flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center overflow-hidden">
+    <div className="group hover:bg-secondary/50 transition-colors border-b border-border/60" style={{ padding: 0 }}>
+      <div className="flex items-center gap-3 px-4 py-2.5">
+        <div className="flex-shrink-0 w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
           <ImageThumbnailPreview 
             file={file} 
             fallbackIcon={getFileIcon(file)} 
@@ -456,16 +514,16 @@ const FileListItem: React.FC<FileItemProps> = ({
         
         {/* File info */}
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate mb-1" title={file.name}>
+          <h4 className="font-medium text-sm text-foreground truncate" title={file.name}>
             {file.name}
           </h4>
-          <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
-            <span className="flex items-center">
-              <HardDrive className="w-3 h-3 mr-1" />
+          <div className="hidden sm:flex items-center gap-6 text-xs text-muted-foreground mt-0.5">
+            <span className="flex items-center gap-1">
+              <HardDrive className="w-3 h-3" />
               {formatFileSize(file.size)}
             </span>
-            <span className="flex items-center">
-              <Calendar className="w-3 h-3 mr-1" />
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
               {formatDate(file.uploadDate)}
             </span>
           </div>
@@ -505,7 +563,7 @@ const FileListItem: React.FC<FileItemProps> = ({
           </Button>
         </div>
       </div>
-    </Card>
+    </div>
   );
 };
 
@@ -589,7 +647,7 @@ const ImageThumbnailPreview: React.FC<{
   }
   
   return (
-    <div className="flex items-center justify-center w-full h-full text-gray-400 dark:text-gray-500">
+    <div className="flex items-center justify-center w-full h-full text-muted-foreground">
       <div className={className.includes('rounded-lg') ? "" : "text-4xl"}>
         {fallbackIcon}
       </div>
@@ -598,3 +656,98 @@ const ImageThumbnailPreview: React.FC<{
 };
 
 export default FileList;
+
+// Folder Item Components
+interface FolderItemProps {
+  folder: FolderResponse;
+  onClick: () => void;
+  onDelete: () => void;
+  onRename: () => void;
+  formatDate: (date: Date) => string;
+}
+
+const FolderGridItem: React.FC<FolderItemProps> = ({ folder, onClick, onDelete, onRename, formatDate }) => {
+  return (
+    <div
+      className="bg-white border border-border rounded-xl group relative overflow-hidden hover:shadow-card-hover transition-all duration-200 cursor-pointer"
+      onClick={onClick}
+    >
+      <div className="aspect-[4/3] bg-blue-50/60 flex flex-col items-center justify-center relative overflow-hidden p-4">
+        <Folder className="w-14 h-14 text-blue-500 mb-2" fill="currentColor" fillOpacity={0.2} />
+        <h4 className="font-medium text-sm text-foreground truncate w-full text-center" title={folder.name}>
+          {folder.name}
+        </h4>
+
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center space-x-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); onRename(); }}
+            className="bg-white/90 text-foreground hover:bg-white"
+            title="Rename Folder"
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="bg-red-500/90 text-white hover:bg-red-600"
+            title="Delete Folder"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FolderListItem: React.FC<FolderItemProps> = ({ folder, onClick, onDelete, onRename, formatDate }) => {
+  return (
+    <div
+      className="group hover:bg-secondary/50 transition-colors border-b border-border/60 cursor-pointer"
+      onClick={onClick}
+    >
+      <div className="flex items-center gap-3 px-4 py-2.5">
+        <div className="flex-shrink-0 w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center overflow-hidden">
+          <Folder className="w-5 h-5 text-blue-500" fill="currentColor" fillOpacity={0.2} />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h4 className="font-medium text-sm text-foreground truncate" title={folder.name}>
+            {folder.name}
+          </h4>
+          <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground mt-0.5">
+            <span>Folder</span>
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {formatDate(new Date(folder.created_at))}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); onRename(); }}
+            className="h-8 w-8 p-0"
+            title="Rename Folder"
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+            title="Delete Folder"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};

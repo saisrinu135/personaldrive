@@ -16,7 +16,7 @@ describe('Property 30: Accessibility Compliance', () => {
     cleanup();
   });
   // Generator for button variants
-  const buttonVariantGen = fc.constantFrom('primary', 'secondary', 'outline', 'ghost', 'danger');
+  const buttonVariantGen = fc.constantFrom('default', 'glass', 'outline', 'ghost', 'danger');
   
   // Generator for button sizes
   const buttonSizeGen = fc.constantFrom('sm', 'md', 'lg');

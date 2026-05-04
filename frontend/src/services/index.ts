@@ -10,6 +10,9 @@ export * from './provider.service';
 // Storage (token management) service
 export * from './storage.service';
 
+// Metrics service
+export * from './metrics.service';
+
 // User service (register renamed to avoid conflict with auth.service)
 export {
   validateEmail,

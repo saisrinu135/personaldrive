@@ -50,7 +50,7 @@ export const FileUploaderExample: React.FC = () => {
         <CardContent>
           <FileUploader
             providerId="example-provider-1"
-            folderPath="uploads"
+            folderId="uploads"
             onProgress={handleProgress}
           />
         </CardContent>
@@ -66,7 +66,7 @@ export const FileUploaderExample: React.FC = () => {
             providerId="example-provider-2"
             accept={['image/*']}
             maxSize={5 * 1024 * 1024} // 5MB
-            folderPath="images"
+            folderId="images"
             onProgress={handleProgress}
           />
         </CardContent>
@@ -83,7 +83,7 @@ export const FileUploaderExample: React.FC = () => {
             multiple={false}
             accept={['application/pdf', 'text/*']}
             maxSize={10 * 1024 * 1024} // 10MB
-            folderPath="documents"
+            folderId="documents"
             onProgress={handleProgress}
           />
         </CardContent>
@@ -98,7 +98,7 @@ export const FileUploaderExample: React.FC = () => {
           <FileUploader
             providerId="example-provider-4"
             onUpload={handleCustomUpload}
-            folderPath="custom"
+            folderId="custom"
           />
         </CardContent>
       </Card>
@@ -112,7 +112,7 @@ export const FileUploaderExample: React.FC = () => {
           <div className="flex items-center space-x-4">
             <Button
               onClick={() => setIsDisabled(!isDisabled)}
-              variant={isDisabled ? 'primary' : 'secondary'}
+              variant={isDisabled ? 'default' : 'secondary'}
             >
               {isDisabled ? 'Enable' : 'Disable'} Uploader
             </Button>
@@ -120,7 +120,7 @@ export const FileUploaderExample: React.FC = () => {
           <FileUploader
             providerId="example-provider-5"
             disabled={isDisabled}
-            folderPath="disabled-test"
+            folderId="disabled-test"
             onProgress={handleProgress}
           />
         </CardContent>

@@ -20,7 +20,7 @@ async def upload_object(
     current_user: CurrentUser,
     db: Database,
     file: UploadFile = File(...),
-    folder_path: Optional[str] = ""
+    folder_id: Optional[UUID] = None
 ):
     """Upload a file to storage"""
     service = ObjectService(db)
@@ -35,7 +35,7 @@ async def upload_object(
         user_id=current_user.id,
         provider_id=provider_id,
         file=file,
-        folder_path=folder_path or ""
+        folder_id=folder_id
     )
 
     obj_response = ObjectResponse.from_orm(obj)
@@ -55,7 +55,7 @@ async def list_objects(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     search: Optional[str] = None,
-    folder_path: Optional[str] = None
+    folder_id: Optional[UUID] = None
 ):
     """List user's objects"""
     service = ObjectService(db)
@@ -66,7 +66,7 @@ async def list_objects(
         page=page,
         limit=limit,
         search=search,
-        folder_path=folder_path
+        folder_id=folder_id
     )
 
     objects_response = [ObjectResponse.from_orm(
@@ -217,7 +217,7 @@ async def init_multipart_upload(
         provider_id=provider_id,
         filename=payload.filename,
         content_type=payload.content_type,
-        folder_path=payload.folder_path
+        folder_id=payload.folder_id
     )
     return APIResponse(status=True, message="Multipart upload initiated", data=result)
 
@@ -254,6 +254,7 @@ async def complete_multipart_upload(
     upload_id: str = Query(...),
     filename: str = Query(...),
     content_type: Optional[str] = Query(None),
+    folder_id: Optional[UUID] = Query(None),
     payload: MultipartUploadComplete = None
 ):
     """Complete a multipart upload"""
@@ -270,6 +271,7 @@ async def complete_multipart_upload(
         filename=filename,
         size_bytes=payload.size_bytes,
         content_type=content_type,
+        folder_id=folder_id,
         meta=payload.meta
     )
 

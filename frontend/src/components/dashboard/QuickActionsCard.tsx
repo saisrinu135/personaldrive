@@ -19,7 +19,7 @@ export interface QuickAction {
   label: string;
   icon: React.ReactNode;
   onClick: () => void;
-  variant?: 'primary' | 'secondary' | 'outline';
+  variant?: 'default' | 'secondary' | 'outline';
   disabled?: boolean;
 }
 
@@ -47,7 +47,7 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
       label: 'Upload Files',
       icon: <Upload className="h-4 w-4" />,
       onClick: onUploadFiles || (() => {}),
-      variant: 'primary',
+      variant: 'default',
       disabled: !onUploadFiles,
     },
     {
@@ -90,7 +90,7 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
           {/* Primary actions (larger buttons) */}
           <div className="space-y-2">
             {allActions
-              .filter(action => action.variant === 'primary')
+              .filter(action => action.variant === 'default')
               .map((action, index) => (
                 <motion.div
                   key={action.id}
@@ -115,7 +115,7 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
           {/* Secondary actions (grid layout) */}
           <div className="grid grid-cols-2 gap-2">
             {allActions
-              .filter(action => action.variant !== 'primary')
+              .filter(action => action.variant !== 'default')
               .map((action, index) => (
                 <motion.div
                   key={action.id}

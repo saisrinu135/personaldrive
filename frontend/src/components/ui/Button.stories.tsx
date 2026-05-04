@@ -14,9 +14,9 @@ export const AllVariants = () => (
     <div className="space-y-2">
       <h3 className="text-lg font-semibold">Primary</h3>
       <div className="flex gap-2">
-        <Button variant="primary" size="sm">Small Primary</Button>
-        <Button variant="primary" size="md">Medium Primary</Button>
-        <Button variant="primary" size="lg">Large Primary</Button>
+        <Button variant="default" size="sm">Small Primary</Button>
+        <Button variant="default" size="md">Medium Primary</Button>
+        <Button variant="default" size="lg">Large Primary</Button>
       </div>
     </div>
 
@@ -63,7 +63,7 @@ export const WithIcons = () => (
     <h2 className="text-2xl font-bold mb-4">Buttons with Icons</h2>
     
     <div className="flex flex-wrap gap-2">
-      <Button variant="primary" icon={<Download />}>Download</Button>
+      <Button variant="default" icon={<Download />}>Download</Button>
       <Button variant="secondary" icon={<Plus />}>Add Item</Button>
       <Button variant="outline" icon={<Settings />}>Settings</Button>
       <Button variant="ghost" icon={<Save />}>Save</Button>
@@ -77,7 +77,7 @@ export const LoadingStates = () => (
     <h2 className="text-2xl font-bold mb-4">Loading States</h2>
     
     <div className="flex flex-wrap gap-2">
-      <Button variant="primary" loading>Loading Primary</Button>
+      <Button variant="default" loading>Loading Primary</Button>
       <Button variant="secondary" loading>Loading Secondary</Button>
       <Button variant="outline" loading>Loading Outline</Button>
       <Button variant="ghost" loading>Loading Ghost</Button>
@@ -91,7 +91,7 @@ export const DisabledStates = () => (
     <h2 className="text-2xl font-bold mb-4">Disabled States</h2>
     
     <div className="flex flex-wrap gap-2">
-      <Button variant="primary" disabled>Disabled Primary</Button>
+      <Button variant="default" disabled>Disabled Primary</Button>
       <Button variant="secondary" disabled>Disabled Secondary</Button>
       <Button variant="outline" disabled>Disabled Outline</Button>
       <Button variant="ghost" disabled>Disabled Ghost</Button>
@@ -114,7 +114,7 @@ export const InteractiveDemo = () => {
       <p className="text-gray-600 mb-4">Click the button to see loading state and animations</p>
       
       <Button 
-        variant="primary" 
+        variant="default" 
         loading={loading} 
         onClick={handleClick}
         icon={<Download />}

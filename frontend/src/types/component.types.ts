@@ -3,7 +3,7 @@ import { User } from './auth.types';
 
 // Base Component Props
 export interface ButtonProps {
-  variant: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  variant: 'default' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   loading?: boolean;

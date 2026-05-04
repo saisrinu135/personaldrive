@@ -20,7 +20,7 @@ export interface FileUploaderProps {
   disabled?: boolean;
   providerId: string;
   providers?: Provider[];
-  folderPath?: string;
+  folderId?: string;
   className?: string;
 }
 
@@ -52,7 +52,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   disabled = false,
   providerId,
   providers,
-  folderPath = '',
+  folderId = '',
   className = '',
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -168,7 +168,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         
         await uploadFile(file, {
           providerId: localProviderId,
-          folderPath,
+          folderId: folderId || undefined,
           abortController: fileWithProgress.abortController,
           onProgress: (progress) => {
             // Update progress for this specific file
@@ -223,7 +223,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
     } finally {
       setIsUploading(false);
     }
-  }, [disabled, isUploading, validateFile, onUpload, localProviderId, folderPath, onProgress, addToast]);
+  }, [disabled, isUploading, validateFile, onUpload, localProviderId, folderId, onProgress, addToast]);
 
   // Drag and drop handlers
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -299,8 +299,8 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
           relative overflow-hidden transition-all duration-300 ease-out cursor-pointer rounded-2xl
           border-2 border-dashed
           ${isDragOver 
-            ? 'border-primary bg-primary/5 shadow-[0_0_30px_rgba(var(--primary),0.15)]' 
-            : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 backdrop-blur-sm'
+            ? 'border-primary bg-primary/5 shadow-[0_0_20px_rgba(37,99,235,0.1)]' 
+            : 'border-border bg-slate-50 hover:bg-slate-100 hover:border-primary/30'
           }
           ${disabled || isUploading ? 'opacity-50 cursor-not-allowed' : ''}
         `}
@@ -332,9 +332,9 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
             Drag and drop files here, or click to browse
           </p>
           
-          <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground/70 font-medium">
-            <span className="bg-white/5 px-3 py-1 rounded-full border border-white/10">Max {formatFileSize(maxSize)}</span>
-            {multiple && <span className="bg-white/5 px-3 py-1 rounded-full border border-white/10">Multiple files</span>}
+          <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground font-medium">
+            <span className="bg-secondary px-3 py-1 rounded-full border border-border">Max {formatFileSize(maxSize)}</span>
+            {multiple && <span className="bg-secondary px-3 py-1 rounded-full border border-border">Multiple files</span>}
           </div>
         </div>
 
@@ -352,7 +352,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
 
       {/* Provider Selector if "All Providers" is currently active globally */}
       {!providerId && providers && providers.length > 0 && (
-        <div className="p-4 mt-2 border border-white/10 bg-white/5 backdrop-blur-md rounded-xl text-sm shadow-sm flex flex-col sm:flex-row sm:items-center gap-4 transition-all hover:bg-white/10">
+        <div className="p-4 mt-2 border border-border bg-slate-50 rounded-xl text-sm shadow-sm flex flex-col sm:flex-row sm:items-center gap-4 transition-all hover:bg-slate-100">
           <label className="font-medium text-foreground whitespace-nowrap text-xs uppercase tracking-wider opacity-80">
             Destination Provider
           </label>
@@ -360,10 +360,10 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
             <select 
               value={localProviderId} 
               onChange={e => setLocalProviderId(e.target.value)}
-              className="w-full appearance-none bg-transparent border-b border-white/20 py-2 pl-2 pr-8 text-sm font-medium focus:outline-none focus:border-primary transition-colors text-foreground cursor-pointer"
+              className="w-full appearance-none bg-white border border-border rounded-lg py-2 pl-3 pr-8 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors text-foreground cursor-pointer"
             >
               {providers.map(p => (
-                <option key={p.id} value={p.id} className="bg-neutral-900">{p.provider_name} {p.is_active ? '' : '(Inactive)'}</option>
+                <option key={p.id} value={p.id}>{p.provider_name} {p.is_active ? '' : '(Inactive)'}</option>
               ))}
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
@@ -443,9 +443,9 @@ const FileUploadItem: React.FC<FileUploadItemProps> = ({
       initial={{ opacity: 0, y: 10, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-      className="flex items-center space-x-4 p-4 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl transition-all hover:bg-white/10"
+      className="flex items-center space-x-4 p-4 bg-slate-50 border border-border rounded-xl transition-all hover:bg-slate-100"
     >
-      <div className="flex-shrink-0 p-2 bg-black/20 rounded-lg">
+      <div className="flex-shrink-0 p-2 bg-secondary rounded-lg">
         {getStatusIcon()}
       </div>
       
@@ -464,7 +464,7 @@ const FileUploadItem: React.FC<FileUploadItemProps> = ({
         )}
         
         {(progress.status === 'uploading' || progress.status === 'pending') && (
-          <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden">
+          <div className="w-full bg-border rounded-full h-1.5 overflow-hidden">
             <motion.div
               className={`h-full rounded-full ${getStatusColor()}`}
               initial={{ width: 0 }}

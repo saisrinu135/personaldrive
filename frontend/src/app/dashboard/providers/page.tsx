@@ -44,7 +44,7 @@ export default function ProvidersPage() {
           <h2 className="text-2xl font-bold">Storage Providers</h2>
           <p className="text-muted-foreground">Manage your connection to cloud storage services.</p>
         </div>
-        <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={() => setIsAddOpen(true)}>
+        <Button variant="default" icon={<Plus className="w-4 h-4" />} onClick={() => setIsAddOpen(true)}>
           Add Provider
         </Button>
       </div>
@@ -61,7 +61,7 @@ export default function ProvidersPage() {
             <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
               You haven't connected any cloud storage yet. Add AWS S3, local storage, or other providers to start managing files.
             </p>
-            <Button variant="primary" onClick={() => setIsAddOpen(true)}>Connect Provider</Button>
+            <Button variant="default" onClick={() => setIsAddOpen(true)}>Connect Provider</Button>
           </div>
         )}
       </div>

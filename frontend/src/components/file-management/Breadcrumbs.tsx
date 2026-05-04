@@ -1,0 +1,1 @@
+// This file has been removed - use Breadcrumbs from @/components/navigation/Breadcrumbs instead

@@ -41,7 +41,7 @@ export const Default: Story = {
           <p>This is the main content of the card. It can contain any React elements.</p>
         </CardContent>
         <CardFooter>
-          <Button variant="primary">Action</Button>
+          <Button variant="default">Action</Button>
         </CardFooter>
       </>
     ),
@@ -251,8 +251,8 @@ export const ResponsiveDemo: Story = {
           </p>
         </CardContent>
         <CardFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="primary" className="w-full sm:w-auto">
-            Primary Action
+          <Button variant="default" className="w-full sm:w-auto">
+              Primary Action
           </Button>
           <Button variant="outline" className="w-full sm:w-auto">
             Secondary Action

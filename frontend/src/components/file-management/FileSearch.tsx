@@ -293,7 +293,7 @@ export const FileSearch: React.FC<FileSearchProps> = ({
         {/* Filter toggle */}
         {showFilters && (
           <Button
-            variant={showAdvancedFilters ? 'primary' : 'ghost'}
+            variant={showAdvancedFilters ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
             className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"

@@ -39,7 +39,7 @@ export const FormContainer: React.FC<FormContainerProps> = ({
         
         <Button
           type="submit"
-          variant="primary"
+          variant="default"
           size="lg"
           loading={loading}
           disabled={loading}

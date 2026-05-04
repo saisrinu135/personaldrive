@@ -12,6 +12,7 @@ import math
 from app.models.object import Object
 from app.models.provider import StorageProvider
 from app.services.provider import StorageService
+from app.services.folders import FolderService
 from app.schemas.objects import ObjectUpload, ObjectResponse, ObjectListResponse
 from app.clients.factory import StorageClientFactory
 from app.core.security import decrypt_secret
@@ -84,7 +85,7 @@ class ObjectService:
         user_id: UUID,
         provider_id: UUID,
         file: UploadFile,
-        folder_path: str = "",
+        folder_id: Optional[UUID] = None,
         meta: Optional[Dict[str, Any]] = None
     ) -> Object:
         """Upload an object to storage"""
@@ -109,16 +110,27 @@ class ObjectService:
                 detail="Cannot upload to inactive provider"
             )
 
+        # Get folder path for s3_key
+        folder_service = FolderService(self.db)
+        folder_path = await folder_service.get_folder_path_string(user_id, folder_id)
+
         # Sanitize and create S3 key
         clean_name = self._sanitize_filename(file.filename)
-        s3_key = f"{folder_path.strip('/')}/{clean_name}" if folder_path else clean_name
+        # Using UUID for uniqueness in S3 key to avoid rename issues, 
+        # but keep folder path for context if desired. Let's use a hybrid:
+        # folder_path/random_uuid.ext or folder_path/clean_name
+        s3_key = f"{folder_path}/{clean_name}" if folder_path else clean_name
 
         # Check for existing object
         if await self._check_key_exists(user_id=user_id, provider_id=provider_id, new_key=s3_key):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"File '{file.filename}' already exists in this location"
-            )
+            # To prevent conflict, append a short UUID
+            import uuid
+            name_parts = clean_name.rsplit('.', 1)
+            if len(name_parts) == 2:
+                clean_name = f"{name_parts[0]}_{str(uuid.uuid4())[:8]}.{name_parts[1]}"
+            else:
+                clean_name = f"{clean_name}_{str(uuid.uuid4())[:8]}"
+            s3_key = f"{folder_path}/{clean_name}" if folder_path else clean_name
 
         # Read file content
         content = await file.read()
@@ -142,6 +154,7 @@ class ObjectService:
         obj = Object(
             user_id=user_id,
             provider_id=provider_id,
+            folder_id=folder_id,
             s3_key=s3_key,
             filename=file.filename,
             content_type=file.content_type,
@@ -164,7 +177,7 @@ class ObjectService:
         page: int = 1,
         limit: int = 20,
         search: Optional[str] = None,
-        folder_path: Optional[str] = None
+        folder_id: Optional[UUID] = None
     ) -> Dict[str, Any]:
         """List user's objects with pagination"""
 
@@ -198,10 +211,8 @@ class ObjectService:
             query = query.where(search_filter)
             count_query = count_query.where(search_filter)
 
-        if folder_path:
-            folder_filter = Object.s3_key.like(f"{folder_path}%")
-            query = query.where(folder_filter)
-            count_query = count_query.where(folder_filter)
+        query = query.where(Object.folder_id == folder_id)
+        count_query = count_query.where(Object.folder_id == folder_id)
 
         # Get total count
         total_result = await self.db.execute(count_query)
@@ -371,7 +382,7 @@ class ObjectService:
         provider_id: UUID,
         filename: str,
         content_type: str = None,
-        folder_path: str = ""
+        folder_id: Optional[UUID] = None
     ) -> Dict[str, str]:
         """Initiate a multipart upload"""
         if not filename:
@@ -384,12 +395,20 @@ class ObjectService:
             raise HTTPException(
                 status_code=400, detail="Cannot upload to inactive provider")
 
+        folder_service = FolderService(self.db)
+        folder_path = await folder_service.get_folder_path_string(user_id, folder_id)
+
         clean_name = self._sanitize_filename(filename)
-        s3_key = f"{folder_path.strip('/')}/{clean_name}" if folder_path else clean_name
+        s3_key = f"{folder_path}/{clean_name}" if folder_path else clean_name
 
         if await self._check_key_exists(user_id=user_id, provider_id=provider_id, new_key=s3_key):
-            raise HTTPException(
-                status_code=409, detail=f"File '{filename}' already exists")
+            import uuid
+            name_parts = clean_name.rsplit('.', 1)
+            if len(name_parts) == 2:
+                clean_name = f"{name_parts[0]}_{str(uuid.uuid4())[:8]}.{name_parts[1]}"
+            else:
+                clean_name = f"{clean_name}_{str(uuid.uuid4())[:8]}"
+            s3_key = f"{folder_path}/{clean_name}" if folder_path else clean_name
 
         client = await self._get_storage_client(provider)
         upload_id = await client.create_multipart_upload(key=s3_key, content_type=content_type)
@@ -430,6 +449,7 @@ class ObjectService:
         filename: str,
         size_bytes: int,
         content_type: str = None,
+        folder_id: Optional[UUID] = None,
         meta: Optional[Dict[str, Any]] = None
     ) -> Object:
         """Complete a multipart upload and save to db"""
@@ -447,6 +467,7 @@ class ObjectService:
         obj = Object(
             user_id=user_id,
             provider_id=provider_id,
+            folder_id=folder_id,
             s3_key=s3_key,
             filename=filename,
             content_type=content_type,

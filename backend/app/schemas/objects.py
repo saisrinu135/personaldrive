@@ -7,7 +7,7 @@ class ObjectUpload(BaseModel):
     """Schema for object upload request"""
     filename: str = Field(..., description="Original filename")
     content_type: Optional[str] = Field(None, description="MIME content type")
-    folder_path: Optional[str] = Field("", description="Folder path (prefix)")
+    folder_id: Optional[UUID] = Field(None, description="Folder ID")
     meta: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional metadata")
 
 class ObjectResponse(BaseModel):
@@ -15,6 +15,7 @@ class ObjectResponse(BaseModel):
     id: UUID
     provider_id: UUID
     user_id: UUID
+    folder_id: Optional[UUID]
     s3_key: str
     filename: str
     content_type: Optional[str]
@@ -47,7 +48,7 @@ class MultipartUploadInit(BaseModel):
     """Schema for initializing a multipart upload"""
     filename: str = Field(..., description="Original filename")
     content_type: Optional[str] = Field(None, description="MIME content type")
-    folder_path: Optional[str] = Field("", description="Folder path (prefix)")
+    folder_id: Optional[UUID] = Field(None, description="Folder ID")
 
 class MultipartUploadPart(BaseModel):
     """Schema for completing a multipart upload"""

@@ -23,6 +23,7 @@ class User(DBBase):
 
     providers = relationship("StorageProvider",back_populates="user",cascade="all, delete-orphan")
     objects = relationship("Object", back_populates="user", cascade="all, delete-orphan")
+    folders = relationship("Folder", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return self.email

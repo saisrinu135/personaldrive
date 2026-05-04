@@ -22,7 +22,7 @@ export default function NotFound() {
 
         <div className="space-y-3">
           <Link href="/" className="block">
-            <Button variant="primary" size="md" className="w-full">
+            <Button variant="default" size="md" className="w-full">
               Go Home
             </Button>
           </Link>

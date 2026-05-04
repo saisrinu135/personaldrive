@@ -84,7 +84,7 @@ export const ValidationExample: React.FC = () => {
         {/* Submit Button */}
         <Button
           type="submit"
-          variant="primary"
+          variant="default"
           size="lg"
           loading={isSubmitting}
           disabled={!isValid || isSubmitting}

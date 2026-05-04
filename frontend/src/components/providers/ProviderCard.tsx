@@ -183,7 +183,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({ provider, onRefresh 
             variant="outline" 
             size="sm" 
             onClick={() => setDeleteOpen(true)} 
-            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 shadow-none border-red-200 dark:border-red-900/50 gap-1.5 px-3"
+            className="text-red-500 hover:text-red-600 hover:bg-red-50 shadow-none border-red-200 gap-1.5 px-3"
           >
             <Trash2 className="w-3.5 h-3.5" />
             Remove

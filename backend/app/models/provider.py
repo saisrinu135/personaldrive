@@ -10,10 +10,12 @@ from utils.datetime_utils import get_current_utc
 
 
 class ProviderType(str, enum.Enum):
-    oracle = "oracle"
     aws = "aws"
     cloudflare = "cloudflare"
-    others = "others"
+    oracle = "oracle"
+    minio = "minio"
+    backblaze = "backblaze"
+    digitalocean = "digitalocean"
 
 
 
@@ -48,6 +50,7 @@ class StorageProvider(DBBase):
     # Relationship
     user = relationship("User", back_populates="providers")
     objects = relationship("Object", back_populates="provider")
+    folders = relationship("Folder", back_populates="provider", cascade="all, delete-orphan")
 
 
     def __repr__(self):

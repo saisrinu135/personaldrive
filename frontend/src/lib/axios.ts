@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { getAccessToken, getRefreshToken, setAccessToken, clearTokens, isTokenExpired } from '@/services/storage.service';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://cloud.saisrinu.online';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
 
 // Formatted error interface for consistent error handling
 export interface FormattedError {

@@ -27,7 +27,7 @@ describe('Button Component', () => {
 
   describe('Variants', () => {
     it('renders primary variant correctly', () => {
-      render(<Button variant="primary">Primary</Button>);
+      render(<Button variant="default">Primary</Button>);
       const button = screen.getByRole('button');
       expect(button).toHaveClass('bg-primary', 'text-primary-foreground');
     });
@@ -201,7 +201,7 @@ describe('Button Component', () => {
 
   describe('Combination States', () => {
     it('renders all variants with all sizes', () => {
-      const variants = ['primary', 'secondary', 'outline', 'ghost', 'danger'] as const;
+      const variants = ['default', 'secondary', 'outline', 'ghost', 'danger'] as const;
       const sizes = ['sm', 'md', 'lg'] as const;
 
       variants.forEach(variant => {
@@ -219,7 +219,7 @@ describe('Button Component', () => {
     });
 
     it('handles loading state with different variants', () => {
-      const variants = ['primary', 'secondary', 'outline', 'ghost', 'danger'] as const;
+      const variants = ['default', 'secondary', 'outline', 'ghost', 'danger'] as const;
 
       variants.forEach(variant => {
         const { unmount } = render(

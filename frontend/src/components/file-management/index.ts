@@ -9,3 +9,5 @@ export type { FileUploaderProps } from './FileUploader';
 
 export { FileSearch } from './FileSearch';
 export type { FileSearchProps } from './FileSearch';
+
+export { FileDetailsModal } from './FileDetailsModal';

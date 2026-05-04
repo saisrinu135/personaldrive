@@ -16,7 +16,7 @@ describe('Property 29: Loading State Display', () => {
     fc.assert(
       fc.property(
         fc.record({
-          variant: fc.constantFrom('primary', 'secondary', 'outline', 'ghost', 'danger'),
+          variant: fc.constantFrom('default', 'secondary', 'outline', 'ghost', 'danger'),
           size: fc.constantFrom('sm', 'md', 'lg'),
           children: fc.string({ minLength: 1, maxLength: 50 }),
         }),
@@ -45,7 +45,7 @@ describe('Property 29: Loading State Display', () => {
     fc.assert(
       fc.property(
         fc.record({
-          variant: fc.constantFrom('primary', 'secondary', 'outline', 'ghost', 'danger'),
+          variant: fc.constantFrom('default', 'secondary', 'outline', 'ghost', 'danger'),
           size: fc.constantFrom('sm', 'md', 'lg'),
           children: fc.string({ minLength: 1, maxLength: 50 }),
         }),

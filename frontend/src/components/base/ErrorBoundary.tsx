@@ -105,7 +105,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <div className="space-y-3">
               <Button
                 onClick={this.handleRetry}
-                variant="primary"
+                variant="default"
                 size="md"
                 className="w-full"
               >

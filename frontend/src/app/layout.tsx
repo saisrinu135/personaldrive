@@ -7,7 +7,7 @@ import { ServiceWorkerRegistration } from '@/components/pwa/ServiceWorkerRegistr
 import './globals.css';
 
 export const viewport: Viewport = {
-  themeColor: '#4F46E5',
+  themeColor: '#2563EB',
   width: 'device-width',
   initialScale: 1,
   minimumScale: 1,
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'CloudVault',
   },
   icons: {
@@ -38,9 +38,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/30">
-        <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark" disableTransitionOnChange>
+    <html lang="en" suppressHydrationWarning>
+      <body className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/20">
+        <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
           <ErrorBoundary>
             <ToastProvider>
               <AuthProvider>

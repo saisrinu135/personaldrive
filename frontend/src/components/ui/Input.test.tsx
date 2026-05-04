@@ -11,7 +11,7 @@ describe('Input Component', () => {
     
     const input = screen.getByPlaceholderText('Enter text');
     expect(input).toBeInTheDocument();
-    expect(input).toHaveClass('flex', 'w-full', 'rounded-md');
+    expect(input).toHaveClass('flex', 'w-full', 'rounded-lg');
   });
 
   it('renders with label', () => {
@@ -247,7 +247,7 @@ describe('Input Component', () => {
       const input = screen.getByPlaceholderText('Enter text');
       const label = screen.getByText('Default Input');
       
-      expect(input).toHaveClass('border-input');
+      expect(input).toHaveClass('glass-input');
       expect(label).toHaveClass('text-foreground');
       expect(input).not.toHaveClass('border-destructive', 'border-green-500');
     });
@@ -312,7 +312,7 @@ describe('Input Component', () => {
       );
       
       const input = screen.getByPlaceholderText('Enter text');
-      expect(input).toHaveClass('border-input');
+      expect(input).toHaveClass('glass-input');
       
       // Change to error state
       rerender(

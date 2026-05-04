@@ -127,7 +127,7 @@ export default function TestErrorPage() {
             </p>
             
             <div className="grid grid-cols-2 gap-2">
-              <Button onClick={showSuccessToast} variant="primary" size="sm">
+              <Button onClick={showSuccessToast} variant="default" size="sm">
                 Success Toast
               </Button>
               <Button onClick={triggerManualError} variant="danger" size="sm">

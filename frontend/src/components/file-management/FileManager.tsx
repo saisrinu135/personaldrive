@@ -12,16 +12,25 @@ import {
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/base/Toast';
 import { FileUploader } from './FileUploader';
 import { FileList } from './FileList';
-import { FileSearch } from './FileSearch';
+
+import { 
+  listFiles,
+} from '@/services/file.service';
 import { FileItem } from '@/types/file.types';
 import { 
-  listFiles, 
-  uploadFile,
-} from '@/services/file.service';
+  FolderResponse, 
+  BreadcrumbItem as FolderBreadcrumbItem,
+  listFolders, 
+  createFolder, 
+  updateFolder, 
+  deleteFolder,
+  getFolderBreadcrumbs
+} from '@/services/folder.service';
+import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
+import { FolderModal } from './FolderModal';
 import { Provider } from '@/types/provider.types';
 
 export interface FileManagerProps {
@@ -40,7 +49,15 @@ export const FileManager: React.FC<FileManagerProps> = ({
   className = '',
 }) => {
   const [files, setFiles] = useState<FileItem[]>([]);
+  const [folders, setFolders] = useState<FolderResponse[]>([]);
   const [filteredFiles, setFilteredFiles] = useState<FileItem[]>([]);
+  const [filteredFolders, setFilteredFolders] = useState<FolderResponse[]>([]);
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [breadcrumbs, setBreadcrumbs] = useState<{ label: string; onClick?: () => void }[]>([]);
+  
+  const [showFolderModal, setShowFolderModal] = useState(false);
+  const [folderModalMode, setFolderModalMode] = useState<'create' | 'rename'>('create');
+  const [selectedFolder, setSelectedFolder] = useState<FolderResponse | null>(null);
   const [searchResults, setSearchResults] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -48,14 +65,17 @@ export const FileManager: React.FC<FileManagerProps> = ({
   const [showUploader, setShowUploader] = useState(false);
   const { addToast } = useToast();
 
-  // Load all files
-  const loadFiles = useCallback(async () => {
+  // Load all items (files and folders)
+  const loadItems = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await listFiles(providerId ? { providerId } : {});
+      const [filesRes, foldersRes] = await Promise.all([
+        listFiles({ providerId, folderId: currentFolderId || undefined }),
+        listFolders(providerId, currentFolderId)
+      ]);
       
       // Convert API response to FileItem format
-      const fileItems: FileItem[] = response.objects.map(file => ({
+      const fileItems: FileItem[] = filesRes.objects.map(file => ({
         id: String(file.id),
         name: file.filename,
         size: file.size_bytes,
@@ -65,64 +85,118 @@ export const FileManager: React.FC<FileManagerProps> = ({
       }));
 
       setFiles(fileItems);
+      setFilteredFiles(fileItems);
+      setFolders(foldersRes);
+      setFilteredFolders(foldersRes);
+
+      if (currentFolderId) {
+        const crumbs = await getFolderBreadcrumbs(currentFolderId);
+        // Transform folder breadcrumbs to component breadcrumbs
+        const transformedCrumbs = crumbs.map((crumb) => ({
+          label: crumb.name,
+          onClick: () => setCurrentFolderId(crumb.id)
+        }));
+        setBreadcrumbs(transformedCrumbs);
+      } else {
+        setBreadcrumbs([]);
+      }
     } catch (error) {
       addToast({
         type: 'error',
-        title: 'Failed to load files',
+        title: 'Failed to load items',
         message: error instanceof Error ? error.message : 'Unknown error occurred',
       });
     } finally {
       setLoading(false);
     }
-  }, [providerId, addToast]);
+  }, [providerId, currentFolderId, addToast]);
 
   // Initial load
   useEffect(() => {
-    loadFiles();
-  }, [loadFiles]);
+    if (providerId) loadItems();
+  }, [loadItems, providerId]);
 
-  // Filter files based on search query
+  // Filter items based on search query
   useEffect(() => {
     if (!searchQuery.trim()) {
       setFilteredFiles(files);
+      setFilteredFolders(folders);
     } else {
-      const filtered = files.filter(file =>
-        file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        file.type.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredFiles(filtered);
+      const q = searchQuery.toLowerCase();
+      setFilteredFiles(files.filter(f => f.name.toLowerCase().includes(q) || f.type.toLowerCase().includes(q)));
+      setFilteredFolders(folders.filter(f => f.name.toLowerCase().includes(q)));
     }
-  }, [files, searchQuery]);
+  }, [files, folders, searchQuery]);
 
   // Handle search results from FileSearch component
   const handleSearchResults = useCallback((results: FileItem[]) => {
     setSearchResults(results);
     setFilteredFiles(results);
+    // When searching globally, we usually only show files or have a separate endpoint for searching both.
+    // For now we'll just clear folders if there's an active global search result set
+    if (results.length > 0) setFilteredFolders([]);
   }, []);
 
-  // Handle file upload complete
   const handleUploadComplete = useCallback(async () => {
-    // Refresh files
-    await loadFiles();
+    await loadItems();
     setShowUploader(false);
-  }, [loadFiles]);
+  }, [loadItems]);
 
-  // Handle refresh
   const handleRefresh = useCallback(() => {
-    loadFiles();
-  }, [loadFiles]);
+    loadItems();
+  }, [loadItems]);
+
+  const handleFolderSubmit = async (name: string) => {
+    if (folderModalMode === 'create') {
+      await createFolder(providerId, name, currentFolderId);
+      addToast({ type: 'success', title: 'Folder created', message: `Created folder "${name}"` });
+    } else if (folderModalMode === 'rename' && selectedFolder) {
+      await updateFolder(selectedFolder.id, name);
+      addToast({ type: 'success', title: 'Folder renamed', message: `Renamed folder to "${name}"` });
+    }
+    await loadItems();
+  };
+
+  const handleDeleteFolder = async (folder: FolderResponse) => {
+    if (window.confirm(`Are you sure you want to delete folder "${folder.name}"? This action cannot be undone.`)) {
+      try {
+        await deleteFolder(folder.id);
+        addToast({ type: 'success', title: 'Folder deleted', message: `Deleted folder "${folder.name}"` });
+        await loadItems();
+      } catch (err: any) {
+        addToast({ type: 'error', title: 'Failed to delete folder', message: err.message || 'Unknown error' });
+      }
+    }
+  };
 
   return (
-    <div className={`space-y-6 ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            File Manager
-          </h2>
-        </div>
+    <div className={`space-y-0 ${className}`}>
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-3 px-5 py-3 bg-white border-b border-border">
         
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setShowUploader(!showUploader)}
+            icon={<Upload className="w-4 h-4" />}
+          >
+            Upload
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setFolderModalMode('create');
+              setSelectedFolder(null);
+              setShowFolderModal(true);
+            }}
+            icon={<FolderOpen className="w-4 h-4" />}
+          >
+            + New
+          </Button>
+
           <Button
             variant="ghost"
             size="sm"
@@ -131,14 +205,6 @@ export const FileManager: React.FC<FileManagerProps> = ({
             className="p-2"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-          
-          <Button
-            variant="primary"
-            onClick={() => setShowUploader(!showUploader)}
-            icon={<Upload className="w-4 h-4" />}
-          >
-            Upload Files
           </Button>
         </div>
       </div>
@@ -152,7 +218,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <Card className="p-4 mb-6">
+            <div className="bg-white border border-border rounded-xl p-4 mb-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-lg">Upload Files</h3>
                 <Button 
@@ -167,57 +233,86 @@ export const FileManager: React.FC<FileManagerProps> = ({
               <FileUploader 
                 providerId={providerId}
                 providers={providers}
+                folderId={currentFolderId || undefined}
                 onUploadComplete={handleUploadComplete} 
               />
-            </Card>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="space-y-4 min-h-[400px]">
-          {/* Enhanced search component */}
-          <FileSearch
-            files={files}
-            onSearchResults={handleSearchResults}
-            placeholder="Search files by name or type..."
-            showFilters={true}
-            className="mb-4"
-          />
+      <div className="space-y-0 min-h-[400px] bg-white rounded-xl border border-border overflow-hidden">
+          {/* Breadcrumbs + View controls row */}
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
+            <Breadcrumbs 
+              items={breadcrumbs} 
+            />
 
-          {/* View controls */}
-          <div className="flex items-center justify-end gap-2">
-            <Button
-              variant={viewMode === 'grid' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
-              className="p-2"
-            >
-              <Grid className="w-4 h-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-              className="p-2"
-            >
-              <List className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              {/* Search inline */}
+              <div className="relative mr-2">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Search files..."
+                  className="h-8 w-48 pl-8 pr-3 rounded-md border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+              <Button
+                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="p-1.5 h-8 w-8"
+              >
+                <List className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                className="p-1.5 h-8 w-8"
+              >
+                <Grid className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-
           {/* File list */}
           <FileList
             files={filteredFiles}
+            folders={filteredFolders}
             providerId={providerId}
             loading={loading}
             viewMode={viewMode}
             onRefresh={handleRefresh}
+            onFolderClick={(folder) => setCurrentFolderId(folder.id)}
+            onFolderDelete={handleDeleteFolder}
+            onFolderRename={(folder) => {
+              setFolderModalMode('rename');
+              setSelectedFolder(folder);
+              setShowFolderModal(true);
+            }}
             emptyMessage={
-              searchResults.length === 0 && files.length > 0
-                ? 'No files found matching your search criteria'
-                : 'No files uploaded yet'
+              searchQuery
+                ? 'No files found matching your search'
+                : 'This folder is empty'
             }
           />
       </div>
+
+      <FolderModal
+        isOpen={showFolderModal}
+        onClose={() => setShowFolderModal(false)}
+        onSubmit={handleFolderSubmit}
+        initialName={folderModalMode === 'rename' ? selectedFolder?.name || '' : ''}
+        title={folderModalMode === 'rename' ? 'Rename Folder' : 'Create New Folder'}
+      />
     </div>
   );
 };

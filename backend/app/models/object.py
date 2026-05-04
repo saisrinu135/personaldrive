@@ -12,6 +12,7 @@ class Object(DBBase):
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     provider_id = Column(UUID(as_uuid=True), ForeignKey("storage_providers.id", ondelete='CASCADE'), nullable=False, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    folder_id = Column(UUID(as_uuid=True), ForeignKey("folders.id", ondelete="CASCADE"), nullable=True, index=True)
 
     # S3 Identity
     s3_key = Column(String, nullable=False)
@@ -31,7 +32,7 @@ class Object(DBBase):
     # Relationships
     provider = relationship("StorageProvider", back_populates="objects")
     user = relationship("User", back_populates="objects")
+    folder = relationship("Folder", back_populates="objects")
 
     def __repr__(self):
         return self.filename
-    

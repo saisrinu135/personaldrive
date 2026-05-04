@@ -2,5 +2,6 @@
 from .user import User
 from .provider import ProviderType, StorageProvider
 from .object import Object
+from .folder import Folder
 
-__all__ = ["User", "ProviderType", "StorageProvider", "Object"]
+__all__ = ["User", "ProviderType", "StorageProvider", "Object", "Folder"]

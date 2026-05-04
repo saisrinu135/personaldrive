@@ -3,229 +3,262 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { 
-  Cloud, 
-  Shield, 
-  Zap, 
-  Users, 
-  ArrowRight, 
+import {
+  Cloud,
+  Shield,
+  Zap,
+  Users,
+  ArrowRight,
   CheckCircle,
   Upload,
   Download,
   FolderOpen,
-  Smartphone,
-  Monitor,
-  Tablet
+  Server,
+  Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Animation variants
 const fadeInUp = {
-  initial: { opacity: 0, y: 60 },
+  initial: { opacity: 0, y: 40 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.6, ease: 'easeOut' }
+  transition: { duration: 0.5, ease: 'easeOut' },
 };
 
 const staggerContainer = {
   animate: {
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
+    transition: { staggerChildren: 0.08 },
+  },
 };
 
 const scaleIn = {
-  initial: { opacity: 0, scale: 0.8 },
+  initial: { opacity: 0, scale: 0.9 },
   animate: { opacity: 1, scale: 1 },
-  transition: { duration: 0.5, ease: 'easeOut' }
+  transition: { duration: 0.4, ease: 'easeOut' },
 };
 
-// Feature data
 const features = [
   {
-    icon: <Cloud className="h-8 w-8" />,
-    title: 'Secure Cloud Storage',
-    description: 'Store your files safely in the cloud with enterprise-grade security and encryption.'
+    icon: <Cloud className="h-6 w-6" />,
+    title: 'Multi-Provider Support',
+    description: 'Connect AWS S3, Cloudflare R2, Oracle Cloud, MinIO, Backblaze and any S3-compatible service.',
+    color: 'text-blue-600 bg-blue-50',
   },
   {
-    icon: <Upload className="h-8 w-8" />,
+    icon: <Upload className="h-6 w-6" />,
     title: 'Easy File Upload',
-    description: 'Drag and drop files or browse to upload. Support for all file types with progress tracking.'
+    description: 'Drag and drop files or browse to upload. Supports all file types with real-time progress.',
+    color: 'text-violet-600 bg-violet-50',
   },
   {
-    icon: <FolderOpen className="h-8 w-8" />,
-    title: 'Smart Organization',
-    description: 'Organize files in folders, search by name, and manage your storage efficiently.'
+    icon: <FolderOpen className="h-6 w-6" />,
+    title: 'Folder Hierarchy',
+    description: 'Organize files with a rich folder structure backed by your database. Rename, move, nest.',
+    color: 'text-emerald-600 bg-emerald-50',
   },
   {
-    icon: <Shield className="h-8 w-8" />,
+    icon: <Shield className="h-6 w-6" />,
     title: 'Privacy First',
-    description: 'Your data is encrypted and secure. Only you have access to your personal files.'
+    description: 'Your credentials are encrypted. Only you control access to your cloud storage accounts.',
+    color: 'text-orange-600 bg-orange-50',
   },
   {
-    icon: <Zap className="h-8 w-8" />,
+    icon: <Zap className="h-6 w-6" />,
     title: 'Lightning Fast',
-    description: 'Quick uploads, instant downloads, and responsive interface for seamless experience.'
+    description: 'Direct pre-signed URLs for uploads and downloads — no data ever passes through our servers.',
+    color: 'text-yellow-600 bg-yellow-50',
   },
   {
-    icon: <Users className="h-8 w-8" />,
-    title: 'Multi-Provider',
-    description: 'Connect multiple cloud providers like AWS, Oracle, and Cloudflare for flexibility.'
-  }
+    icon: <Users className="h-6 w-6" />,
+    title: 'Multiple Accounts',
+    description: 'Manage all your storage accounts in one unified interface with per-account usage tracking.',
+    color: 'text-pink-600 bg-pink-50',
+  },
+];
+
+const providers = [
+  { name: 'AWS S3', icon: '🟠', color: 'bg-orange-50 border-orange-100' },
+  { name: 'Cloudflare R2', icon: '🟠', color: 'bg-amber-50 border-amber-100' },
+  { name: 'Oracle Cloud', icon: '🔴', color: 'bg-red-50 border-red-100' },
+  { name: 'Backblaze B2', icon: '🔴', color: 'bg-red-50 border-red-100' },
+  { name: 'MinIO', icon: '🔵', color: 'bg-blue-50 border-blue-100' },
+  { name: 'Other S3', icon: '⚫', color: 'bg-slate-50 border-slate-100' },
 ];
 
 const benefits = [
-  'Unlimited file types supported',
-  'Advanced search and filtering',
-  'Real-time sync across devices',
-  'Automatic backup and versioning',
-  'Mobile-responsive interface',
-  'Enterprise-grade security'
+  'All major S3-compatible providers',
+  'Hierarchical folder management',
+  'Secure, encrypted credentials',
+  'Pre-signed direct download URLs',
+  'File preview and details panel',
+  'Cross-account file organization',
 ];
 
 export default function Home() {
   const { isAuthenticated, user, isLoading } = useAuth();
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-background">
+    <div className="min-h-screen bg-background">
+      {/* Navigation */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-border">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+              <Cloud className="w-4 h-4 text-primary" />
+            </div>
+            <span className="font-bold text-lg text-foreground">
+              Cloud<span className="text-primary">Vault</span>
+            </span>
+          </div>
+          {!isLoading && (
+            <div className="flex items-center gap-3">
+              {isAuthenticated ? (
+                <Link href="/dashboard">
+                  <Button size="sm" className="gap-2">
+                    Go to Dashboard <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button variant="ghost" size="sm">Sign In</Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button size="sm">Get Started Free</Button>
+                  </Link>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </nav>
+
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
-        
-        <div className="relative container mx-auto px-4 py-20 lg:py-32">
+      <section className="relative overflow-hidden pt-20 pb-32">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-violet-50 pointer-events-none" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative container mx-auto px-4 text-center">
           <motion.div
             initial="initial"
             animate="animate"
             variants={staggerContainer}
-            className="text-center max-w-4xl mx-auto"
+            className="max-w-4xl mx-auto"
           >
-            {/* Main heading */}
-            <motion.h1
-              variants={fadeInUp}
-              className="text-4xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent mb-6"
-            >
-              Your Personal
-              <span className="block text-primary">Cloud Storage</span>
-            </motion.h1>
-
-            {/* Tagline */}
-            <motion.p
-              variants={fadeInUp}
-              className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed"
-            >
-              Store, organize, and access your files from anywhere. 
-              Secure, fast, and designed for your personal needs.
-            </motion.p>
-
-            {/* CTA Buttons */}
-            <motion.div
-              variants={fadeInUp}
-              className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12"
-            >
-              {!isLoading && (
-                <>
-                  {isAuthenticated ? (
-                    <Link href="/dashboard">
-                      <Button size="lg" className="w-full sm:w-auto group">
-                        Go to Dashboard
-                        <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                      </Button>
-                    </Link>
-                  ) : (
-                    <>
-                      <Link href="/register">
-                        <Button size="lg" className="w-full sm:w-auto group">
-                          Get Started Free
-                          <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                        </Button>
-                      </Link>
-                      <Link href="/login">
-                        <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                          Sign In
-                        </Button>
-                      </Link>
-                    </>
-                  )}
-                </>
-              )}
+            <motion.div variants={fadeInUp} className="mb-6">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
+                <Lock className="w-3.5 h-3.5" />
+                Open-source &amp; self-hostable
+              </span>
             </motion.div>
 
-            {/* User greeting for authenticated users */}
-            {isAuthenticated && user && (
+            <motion.h1
+              variants={fadeInUp}
+              className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight tracking-tight"
+            >
+              Your Personal{' '}
+              <span className="text-primary">Cloud Storage</span>
+            </motion.h1>
+
+            <motion.p
+              variants={fadeInUp}
+              className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed"
+            >
+              Connect all your S3-compatible cloud providers in one place.
+              Organize, upload, and manage files with a beautiful, intuitive interface.
+            </motion.p>
+
+            {!isLoading && (
               <motion.div
                 variants={fadeInUp}
-                className="glass-card p-4 max-w-md mx-auto"
+                className="flex flex-col sm:flex-row gap-3 justify-center items-center"
               >
-                <p className="text-sm text-muted-foreground">Welcome back,</p>
-                <p className="font-semibold text-lg">{user.name}</p>
+                {isAuthenticated ? (
+                  <Link href="/dashboard">
+                    <Button size="lg" className="gap-2 shadow-lg shadow-primary/20">
+                      Open Dashboard <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/register">
+                      <Button size="lg" className="gap-2 shadow-lg shadow-primary/20">
+                        Get Started Free <ArrowRight className="h-5 w-5" />
+                      </Button>
+                    </Link>
+                    <Link href="/login">
+                      <Button variant="outline" size="lg">
+                        Sign In
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </motion.div>
             )}
 
-            {/* Device mockups */}
-            <motion.div
-              variants={scaleIn}
-              className="flex justify-center items-center gap-4 mt-16 opacity-60"
-            >
-              <Monitor className="h-8 w-8 text-muted-foreground" />
-              <Tablet className="h-6 w-6 text-muted-foreground" />
-              <Smartphone className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground ml-2">
-                Works on all devices
-              </span>
-            </motion.div>
+            {isAuthenticated && user && (
+              <motion.p variants={fadeInUp} className="mt-4 text-sm text-muted-foreground">
+                Welcome back, <span className="font-medium text-foreground">{user.name}</span>!
+              </motion.p>
+            )}
+          </motion.div>
+
+          {/* Provider pill strip */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+            className="mt-16 flex flex-wrap justify-center gap-3"
+          >
+            {providers.map(p => (
+              <div
+                key={p.name}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium text-foreground ${p.color}`}
+              >
+                <Server className="w-3.5 h-3.5 text-muted-foreground" />
+                {p.name}
+              </div>
+            ))}
           </motion.div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 lg:py-32 relative">
-        <div className="container mx-auto px-4 relative z-10">
+      <section className="py-24 bg-white">
+        <div className="container mx-auto px-4">
           <motion.div
             initial="initial"
             whileInView="animate"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true }}
             variants={staggerContainer}
             className="text-center mb-16"
           >
-            <motion.h2
-              variants={fadeInUp}
-              className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4"
-            >
-              Everything you need for
-              <span className="block text-primary">file management</span>
+            <motion.h2 variants={fadeInUp} className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Everything you need for file management
             </motion.h2>
-            <motion.p
-              variants={fadeInUp}
-              className="text-lg text-muted-foreground max-w-2xl mx-auto"
-            >
-              Powerful features designed to make file storage and management effortless and secure.
+            <motion.p variants={fadeInUp} className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Powerful features to manage all your cloud storage accounts with ease.
             </motion.p>
           </motion.div>
 
           <motion.div
             initial="initial"
             whileInView="animate"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true }}
             variants={staggerContainer}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {features.map((feature, index) => (
               <motion.div
                 key={index}
                 variants={scaleIn}
-                className="glass-card p-6 hover:shadow-glow transition-all duration-300 hover:-translate-y-1"
+                className="p-6 bg-white rounded-2xl border border-border shadow-card hover:shadow-card-hover transition-all duration-200 hover:-translate-y-0.5"
               >
-                <div className="text-primary mb-4">
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 ${feature.color}`}>
                   {feature.icon}
                 </div>
-                <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  {feature.description}
-                </p>
+                <h3 className="text-base font-semibold text-foreground mb-2">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -233,77 +266,52 @@ export default function Home() {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-20 lg:py-32">
+      <section className="py-24 bg-slate-50">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div
               initial="initial"
               whileInView="animate"
               viewport={{ once: true }}
               variants={staggerContainer}
             >
-              <motion.h2
-                variants={fadeInUp}
-                className="text-3xl md:text-4xl font-bold mb-6"
-              >
-                Why choose our
-                <span className="block text-primary">storage solution?</span>
+              <motion.h2 variants={fadeInUp} className="text-3xl md:text-4xl font-bold text-foreground mb-6">
+                Why choose CloudVault?
               </motion.h2>
-              <motion.p
-                variants={fadeInUp}
-                className="text-lg text-muted-foreground mb-8 leading-relaxed"
-              >
-                Built with modern technology and security best practices, 
-                our platform provides everything you need for personal file management.
+              <motion.p variants={fadeInUp} className="text-muted-foreground mb-8 leading-relaxed">
+                Built for developers and power users who manage multiple S3-compatible storage accounts
+                and want a unified, beautiful experience.
               </motion.p>
-              
-              <motion.div
-                variants={staggerContainer}
-                className="space-y-4"
-              >
+              <motion.div variants={staggerContainer} className="space-y-3">
                 {benefits.map((benefit, index) => (
-                  <motion.div
-                    key={index}
-                    variants={fadeInUp}
-                    className="flex items-center gap-3"
-                  >
+                  <motion.div key={index} variants={fadeInUp} className="flex items-center gap-3">
                     <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                    <span className="text-foreground">{benefit}</span>
+                    <span className="text-foreground text-sm">{benefit}</span>
                   </motion.div>
                 ))}
               </motion.div>
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, x: 60 }}
+              initial={{ opacity: 0, x: 40 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-              className="relative"
+              transition={{ duration: 0.5 }}
+              className="bg-white rounded-2xl border border-border shadow-card p-8"
             >
-              <div className="bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl p-8 lg:p-12">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="glass-card p-4 text-center hover:shadow-glow transition-all">
-                    <Upload className="h-8 w-8 text-primary mx-auto mb-2" />
-                    <div className="text-2xl font-bold">Fast</div>
-                    <div className="text-sm text-muted-foreground">Upload</div>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { icon: <Upload className="h-6 w-6 text-blue-600" />, label: 'Direct Upload', sub: 'No size limits' },
+                  { icon: <Download className="h-6 w-6 text-emerald-600" />, label: 'Direct Download', sub: 'Pre-signed URLs' },
+                  { icon: <Shield className="h-6 w-6 text-violet-600" />, label: 'Encrypted', sub: 'AES-256' },
+                  { icon: <FolderOpen className="h-6 w-6 text-orange-600" />, label: 'Folders', sub: 'Full hierarchy' },
+                ].map(item => (
+                  <div key={item.label} className="p-4 bg-slate-50 rounded-xl text-center">
+                    <div className="flex justify-center mb-2">{item.icon}</div>
+                    <div className="text-sm font-semibold text-foreground">{item.label}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{item.sub}</div>
                   </div>
-                  <div className="glass-card p-4 text-center hover:shadow-glow transition-all">
-                    <Download className="h-8 w-8 text-primary mx-auto mb-2" />
-                    <div className="text-2xl font-bold">Instant</div>
-                    <div className="text-sm text-muted-foreground">Download</div>
-                  </div>
-                  <div className="glass-card p-4 text-center hover:shadow-glow transition-all">
-                    <Shield className="h-8 w-8 text-primary mx-auto mb-2" />
-                    <div className="text-2xl font-bold">Secure</div>
-                    <div className="text-sm text-muted-foreground">Storage</div>
-                  </div>
-                  <div className="glass-card p-4 text-center hover:shadow-glow transition-all">
-                    <Cloud className="h-8 w-8 text-primary mx-auto mb-2" />
-                    <div className="text-2xl font-bold">Cloud</div>
-                    <div className="text-sm text-muted-foreground">Sync</div>
-                  </div>
-                </div>
+                ))}
               </div>
             </motion.div>
           </div>
@@ -312,42 +320,30 @@ export default function Home() {
 
       {/* CTA Section */}
       {!isAuthenticated && (
-        <section className="py-20 lg:py-32 relative">
-          <div className="absolute inset-0 bg-primary/5 blur-3xl pointer-events-none" />
-          <div className="container mx-auto px-4 text-center relative z-10">
+        <section className="py-24 bg-gradient-to-r from-primary to-blue-700">
+          <div className="container mx-auto px-4 text-center">
             <motion.div
               initial="initial"
               whileInView="animate"
               viewport={{ once: true }}
               variants={staggerContainer}
-              className="max-w-3xl mx-auto"
+              className="max-w-2xl mx-auto"
             >
-              <motion.h2
-                variants={fadeInUp}
-                className="text-3xl md:text-4xl font-bold mb-6"
-              >
+              <motion.h2 variants={fadeInUp} className="text-3xl md:text-4xl font-bold text-white mb-4">
                 Ready to get started?
               </motion.h2>
-              <motion.p
-                variants={fadeInUp}
-                className="text-lg text-muted-foreground mb-8"
-              >
-                Join thousands of users who trust us with their personal file storage. 
-                Start your journey today with our free account.
+              <motion.p variants={fadeInUp} className="text-blue-100 mb-8 text-lg">
+                Connect your first storage account in minutes.
               </motion.p>
-              <motion.div
-                variants={fadeInUp}
-                className="flex flex-col sm:flex-row gap-4 justify-center"
-              >
+              <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link href="/register">
-                  <Button size="lg" className="w-full sm:w-auto group">
-                    Create Free Account
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  <Button size="lg" variant="secondary" className="gap-2 bg-white text-primary hover:bg-white/90">
+                    Create Free Account <ArrowRight className="h-5 w-5" />
                   </Button>
                 </Link>
                 <Link href="/login">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                    Sign In to Existing Account
+                  <Button size="lg" variant="outline" className="border-white/40 text-white hover:bg-white/10">
+                    Sign In
                   </Button>
                 </Link>
               </motion.div>
@@ -357,17 +353,17 @@ export default function Home() {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-white/5 bg-black/20 backdrop-blur-lg py-12 relative z-10">
-        <div className="container mx-auto px-4">
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <img src="/icon-192.png" alt="CloudVault" className="h-8 w-8 rounded-lg" />
-              <span className="font-semibold text-lg">CloudVault</span>
+      <footer className="bg-white border-t border-border py-10">
+        <div className="container mx-auto px-4 text-center">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <div className="w-7 h-7 bg-primary/10 rounded-lg flex items-center justify-center">
+              <Cloud className="w-4 h-4 text-primary" />
             </div>
-            <p className="text-sm text-muted-foreground">
-              Your personal cloud storage solution. Secure, fast, and reliable.
-            </p>
+            <span className="font-semibold text-foreground">CloudVault</span>
           </div>
+          <p className="text-sm text-muted-foreground">
+            Your personal, secure, multi-provider cloud storage solution.
+          </p>
         </div>
       </footer>
     </div>

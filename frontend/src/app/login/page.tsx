@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { FormContainer } from '@/components/forms/FormContainer';
 import { EmailInput } from '@/components/forms/EmailInput';
 import { PasswordInput } from '@/components/forms/PasswordInput';
 import { Button } from '@/components/ui/Button';
@@ -12,19 +11,20 @@ import { LoginFormData } from '@/types/form.types';
 import { ValidationRule } from '@/types/component.types';
 import { validateForm, isFormValid } from '@/lib/validation';
 import Link from 'next/link';
+import { Cloud, Server, HardDrive, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
-  
+
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
   });
-  
+
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Clear errors only when form data explicitly changes
+  // Clear errors when form data changes
   useEffect(() => {
     setFormErrors({});
     if (error) clearError();
@@ -55,15 +55,13 @@ export default function LoginPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent | React.MouseEvent) => {
     e.preventDefault();
-    
-    // Validate form
+
     const validationResults = validateForm(formData, validationRules);
     const isValid = isFormValid(validationResults);
-    
+
     if (!isValid) {
-      // Convert ValidationResult errors to simple string errors
       const errors: Record<string, string> = {};
       Object.entries(validationResults).forEach(([field, result]) => {
         if (!result.isValid && result.errors.length > 0) {
@@ -75,88 +73,126 @@ export default function LoginPage() {
     }
 
     setIsSubmitting(true);
-    
     try {
       await login(formData.email, formData.password);
-      // Redirect will happen via useEffect when isAuthenticated becomes true
-    } catch (err) {
-      // Error is handled by AuthContext and displayed via error state
-      // Removing console.error to satisfy ESLint no-console
+    } catch {
+      // Error is handled by AuthContext
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Show loading state while checking authentication
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
       </div>
     );
   }
 
-  // Don't render login form if already authenticated
-  if (isAuthenticated) {
-    return null;
-  }
+  if (isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex bg-background">
+      {/* Left Branding Panel */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, x: -30 }}
+        animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5 }}
-        className="max-w-md w-full space-y-8"
+        className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 flex-col justify-between p-12 relative overflow-hidden"
       >
-        {/* Header */}
-        <div className="text-center">
-          <motion.h2
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="text-3xl font-bold text-gray-900"
-          >
-            Sign in to your account
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="mt-2 text-sm text-gray-600"
-          >
-            Access your personal cloud storage
-          </motion.p>
+        {/* Background decoration */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/5 rounded-full" />
+          <div className="absolute bottom-0 -left-20 w-80 h-80 bg-white/5 rounded-full" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/3 rounded-full blur-3xl" />
         </div>
 
-        {/* Login Form */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-        >
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Global Error Message */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="bg-red-50 border border-red-200 rounded-md p-4"
-              >
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-800">{error}</p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
+        {/* Logo */}
+        <div className="relative">
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+              <Cloud className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-white font-bold text-xl">
+              Cloud<span className="text-blue-200">Vault</span>
+            </span>
+          </div>
+        </div>
 
-            {/* Email Field */}
+        {/* Center content */}
+        <div className="relative space-y-6">
+          <h1 className="text-4xl font-bold text-white leading-snug">
+            Welcome back 👋
+          </h1>
+          <p className="text-blue-100 text-lg leading-relaxed">
+            Login to your account to continue
+          </p>
+
+          {/* Feature highlights */}
+          <div className="space-y-3 mt-8">
+            {[
+              { icon: Cloud, label: 'AWS S3, Cloudflare R2, Oracle & more' },
+              { icon: Server, label: 'MinIO, Backblaze B2, and other S3-compatible' },
+              { icon: HardDrive, label: 'Secure, hierarchical folder management' },
+            ].map(({ icon: Icon, label }) => (
+              <div key={label} className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-blue-100 text-sm">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom illustration placeholder */}
+        <div className="relative flex justify-center">
+          <div className="w-64 h-40 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/20 flex items-center justify-center">
+            <div className="text-center">
+              <Cloud className="w-12 h-12 text-white/60 mx-auto mb-2" />
+              <p className="text-white/60 text-xs">Your files, your control</p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Right Form Panel */}
+      <motion.div
+        initial={{ opacity: 0, x: 30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="flex-1 flex flex-col items-center justify-center px-6 py-12 sm:px-12 lg:px-16"
+      >
+        {/* Mobile logo */}
+        <div className="lg:hidden mb-8 flex items-center gap-2">
+          <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center">
+            <Cloud className="w-5 h-5 text-primary" />
+          </div>
+          <span className="font-bold text-xl text-foreground">
+            Cloud<span className="text-primary">Vault</span>
+          </span>
+        </div>
+
+        <div className="w-full max-w-md">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-foreground mb-1">Sign in to your account</h2>
+            <p className="text-muted-foreground text-sm">Access your personal cloud storage</p>
+          </div>
+
+          {/* Error message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-5 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-2"
+            >
+              <AlertCircle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-destructive">{error}</p>
+            </motion.div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <EmailInput
                 type="email"
@@ -165,13 +201,12 @@ export default function LoginPage() {
                 value={formData.email}
                 onChange={handleInputChange('email')}
                 error={formErrors.email}
-                placeholder="Enter your email"
+                placeholder="amara@example.com"
                 required
                 validation={validationRules.email}
               />
             </div>
 
-            {/* Password Field */}
             <div>
               <PasswordInput
                 name="password"
@@ -179,67 +214,55 @@ export default function LoginPage() {
                 value={formData.password}
                 onChange={handleInputChange('password')}
                 error={formErrors.password}
-                placeholder="Enter your password"
+                placeholder="••••••••"
                 required
               />
             </div>
 
-            {/* Submit Button */}
-            <div>
+            {/* Remember me + Forgot password */}
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  id="remember-me"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-background accent-primary"
+                />
+                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                  Remember me
+                </span>
+              </label>
+              <Link
+                href="/forgot-password"
+                className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
+            <div className="pt-2">
               <Button
-                type="button"
-                onClick={handleSubmit}
-                variant="primary"
+                type="submit"
+                variant="default"
                 size="lg"
                 loading={isSubmitting}
                 disabled={isSubmitting}
                 className="w-full"
+                id="login-submit-btn"
               >
-                {isSubmitting ? 'Signing in...' : 'Sign in'}
+                {isSubmitting ? 'Signing in...' : 'Login'}
               </Button>
             </div>
-
-            {/* Links */}
-            <div className="flex items-center justify-between">
-              <div className="text-sm">
-                <Link
-                  href="/forgot-password"
-                  className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
-                >
-                  Forgot your password?
-                </Link>
-              </div>
-              <div className="text-sm">
-                <span className="text-gray-600">Don't have an account? </span>
-                <Link
-                  href="/register"
-                  className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
-                >
-                  Sign up
-                </Link>
-              </div>
-            </div>
           </form>
-        </motion.div>
 
-        {/* Footer */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
-          className="text-center"
-        >
-          <p className="text-xs text-gray-500">
-            By signing in, you agree to our{' '}
-            <Link href="/terms" className="text-blue-600 hover:text-blue-500">
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link href="/privacy" className="text-blue-600 hover:text-blue-500">
-              Privacy Policy
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Don&apos;t have an account?{' '}
+            <Link href="/register" className="font-medium text-primary hover:text-primary/80 transition-colors">
+              Sign up
             </Link>
           </p>
-        </motion.div>
+        </div>
       </motion.div>
     </div>
   );
