@@ -12,6 +12,7 @@ from utils.datetime_utils import get_current_utc
 class ProviderType(str, enum.Enum):
     aws = "aws"
     cloudflare = "cloudflare"
+    others = "others"
     oracle = "oracle"
     minio = "minio"
     backblaze = "backblaze"
