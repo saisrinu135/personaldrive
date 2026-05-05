@@ -40,6 +40,19 @@ export interface ButtonProps
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, loading, icon, children, disabled, type = 'button', ...props }, ref) => {
+    // Check if children has visible content (not just hidden elements)
+    const hasVisibleChildren = React.Children.toArray(children as React.ReactNode[]).some(child => {
+      if (typeof child === 'string') return child.trim();
+      if (React.isValidElement(child)) {
+        // Check if it's a span with hidden class
+        if (child.type === 'span' && child.props.className?.includes('hidden')) {
+          return false;
+        }
+        return true;
+      }
+      return false;
+    });
+    
     return (
       <motion.button
         className={cn(buttonVariants({ variant, size, className }))}
@@ -59,7 +72,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         )}
         {!loading && icon && (
-          <span className="mr-2">{icon}</span>
+          <span className={hasVisibleChildren ? 'mr-2' : ''}>{icon}</span>
         )}
         {children as React.ReactNode}
       </motion.button>

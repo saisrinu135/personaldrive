@@ -15,7 +15,9 @@ import {
   Calendar,
   HardDrive,
   Eye,
-  EyeOff
+  Share2,
+  Copy,
+  Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -68,6 +70,9 @@ export const FileList: React.FC<FileListProps> = ({
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [fileToDelete, setFileToDelete] = useState<FileWithActions | null>(null);
   const [previewFile, setPreviewFile] = useState<FileWithActions | null>(null);
+  const [shareFile, setShareFile] = useState<FileWithActions | null>(null);
+  const [shareLink, setShareLink] = useState<string>('');
+  const [copied, setCopied] = useState(false);
   const { addToast } = useToast();
 
   // Update files with actions when files prop changes
@@ -182,6 +187,35 @@ export const FileList: React.FC<FileListProps> = ({
       );
     }
   }, [fileToDelete, onDelete, providerId, addToast, onRefresh]);
+
+  // Handle file share
+  const handleShare = useCallback(async (file: FileWithActions) => {
+    try {
+      const response = await axiosInstance.post(`/api/v1/objects/${file.id}/share`, {
+        expiry_hours: 1
+      });
+      const link = response.data.data?.share_url || response.data.data?.url;
+      setShareFile(file);
+      setShareLink(link);
+    } catch (error) {
+      addToast({
+        type: 'error',
+        title: 'Share failed',
+        message: error instanceof Error ? error.message : 'Failed to generate share link',
+      });
+    }
+  }, [addToast]);
+
+  const copyToClipboard = useCallback(() => {
+    navigator.clipboard.writeText(shareLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    addToast({
+      type: 'success',
+      title: 'Copied',
+      message: 'Share link copied to clipboard',
+    });
+  }, [shareLink, addToast]);
 
   // Get file type icon
   const getFileIcon = useCallback((file: FileWithActions) => {
@@ -400,6 +434,39 @@ export const FileList: React.FC<FileListProps> = ({
         file={previewFile}
         onClose={() => setPreviewFile(null)}
       />
+
+      {/* Share Modal */}
+      {shareFile && shareLink && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold mb-4">Share File</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Share link expires in 1 hour
+            </p>
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={shareLink}
+                readOnly
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-sm"
+              />
+              <Button
+                onClick={copyToClipboard}
+                className="flex items-center gap-2"
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              </Button>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setShareFile(null)}
+              className="w-full"
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      )}
     </>
   );
 };
@@ -500,11 +567,12 @@ const FileListItem: React.FC<FileItemProps> = ({
   const isVideo = file.type.startsWith('video/');
   const isImage = file.type.startsWith('image/');
   const isPreviewable = isImage || isVideo || isPdf;
+  const [showActions, setShowActions] = useState(false);
 
   return (
     <div className="group hover:bg-secondary/50 transition-colors border-b border-border/60" style={{ padding: 0 }}>
-      <div className="flex items-center gap-3 px-4 py-2.5">
-        <div className="flex-shrink-0 w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
+      <div className="flex items-center gap-2 px-2 sm:px-4 py-2">
+        <div className="flex-shrink-0 w-8 sm:w-9 h-8 sm:h-9 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
           <ImageThumbnailPreview 
             file={file} 
             fallbackIcon={getFileIcon(file)} 
@@ -514,7 +582,7 @@ const FileListItem: React.FC<FileItemProps> = ({
         
         {/* File info */}
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-sm text-foreground truncate" title={file.name}>
+          <h4 className="font-medium text-xs sm:text-sm text-foreground truncate" title={file.name}>
             {file.name}
           </h4>
           <div className="hidden sm:flex items-center gap-6 text-xs text-muted-foreground mt-0.5">
@@ -527,10 +595,50 @@ const FileListItem: React.FC<FileItemProps> = ({
               {formatDate(file.uploadDate)}
             </span>
           </div>
+          <div className="sm:hidden text-xs text-muted-foreground mt-0.5">
+            {formatFileSize(file.size)}
+          </div>
         </div>
         
-        {/* Actions */}
-        <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {/* Actions - Mobile Menu */}
+        <div className="sm:hidden relative">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowActions(!showActions)}
+            className="h-7 w-7 p-0"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </Button>
+          {showActions && (
+            <div className="absolute right-0 top-7 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 min-w-28">
+              <button
+                className="w-full text-left px-3 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                onClick={() => { if (onPreview) onPreview(file); setShowActions(false); }}
+                disabled={!isPreviewable}
+              >
+                <Eye className="w-3.5 h-3.5" /> Preview
+              </button>
+              <button
+                className="w-full text-left px-3 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                onClick={() => { onDownload(file); setShowActions(false); }}
+                disabled={file.isDownloading || file.isDeleting}
+              >
+                <Download className="w-3.5 h-3.5" /> Download
+              </button>
+              <button
+                className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                onClick={() => { onDelete(file); setShowActions(false); }}
+                disabled={file.isDownloading || file.isDeleting}
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {/* Actions - Desktop */}
+        <div className="hidden sm:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <Button
             variant="ghost"
             size="sm"
@@ -548,6 +656,7 @@ const FileListItem: React.FC<FileItemProps> = ({
             disabled={file.isDownloading || file.isDeleting}
             loading={file.isDownloading}
             className="h-8 w-8 p-0"
+            title="Download"
           >
             <Download className="w-4 h-4" />
           </Button>
@@ -558,6 +667,7 @@ const FileListItem: React.FC<FileItemProps> = ({
             disabled={file.isDownloading || file.isDeleting}
             loading={file.isDeleting}
             className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+            title="Delete"
           >
             <Trash2 className="w-4 h-4" />
           </Button>
@@ -704,18 +814,17 @@ const FolderGridItem: React.FC<FolderItemProps> = ({ folder, onClick, onDelete, 
 };
 
 const FolderListItem: React.FC<FolderItemProps> = ({ folder, onClick, onDelete, onRename, formatDate }) => {
+  const [showActions, setShowActions] = useState(false);
+
   return (
-    <div
-      className="group hover:bg-secondary/50 transition-colors border-b border-border/60 cursor-pointer"
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3 px-4 py-2.5">
-        <div className="flex-shrink-0 w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center overflow-hidden">
-          <Folder className="w-5 h-5 text-blue-500" fill="currentColor" fillOpacity={0.2} />
+    <div className="group hover:bg-secondary/50 transition-colors border-b border-border/60 cursor-pointer">
+      <div className="flex items-center gap-2 px-2 sm:px-4 py-2" onClick={onClick}>
+        <div className="flex-shrink-0 w-8 sm:w-9 h-8 sm:h-9 bg-blue-50 rounded-lg flex items-center justify-center overflow-hidden">
+          <Folder className="w-4 sm:w-5 h-4 sm:h-5 text-blue-500" fill="currentColor" fillOpacity={0.2} />
         </div>
 
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-sm text-foreground truncate" title={folder.name}>
+          <h4 className="font-medium text-xs sm:text-sm text-foreground truncate" title={folder.name}>
             {folder.name}
           </h4>
           <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground mt-0.5">
@@ -727,7 +836,36 @@ const FolderListItem: React.FC<FolderItemProps> = ({ folder, onClick, onDelete, 
           </div>
         </div>
 
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {/* Mobile menu */}
+        <div className="sm:hidden relative">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); setShowActions(!showActions); }}
+            className="h-7 w-7 p-0"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </Button>
+          {showActions && (
+            <div className="absolute right-0 top-7 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 min-w-28">
+              <button
+                className="w-full text-left px-3 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                onClick={(e) => { e.stopPropagation(); onRename(); setShowActions(false); }}
+              >
+                <Pencil className="w-3.5 h-3.5" /> Rename
+              </button>
+              <button
+                className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                onClick={(e) => { e.stopPropagation(); onDelete(); setShowActions(false); }}
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop actions */}
+        <div className="hidden sm:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <Button
             variant="ghost"
             size="sm"

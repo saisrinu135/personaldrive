@@ -36,10 +36,11 @@ const FileListContent = memo<{
   viewMode: 'grid' | 'list';
   handleFolderClick: (folder: FolderItem) => void;
   handleDeleteFolder: (folderId: string) => void;
+  handleFolderRename: (folder: FolderItem) => void;
   setSelectedItem: (itemId: string) => void;
   formatBytes: (bytes: number) => string;
   getFileIcon: (contentType: string) => string;
-}>(({ allItems, viewMode, handleFolderClick, handleDeleteFolder, setSelectedItem, formatBytes, getFileIcon }) => {
+}>(({ allItems, viewMode, handleFolderClick, handleDeleteFolder, handleFolderRename, setSelectedItem, formatBytes, getFileIcon }) => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Close menu when clicking outside
@@ -57,7 +58,7 @@ const FileListContent = memo<{
     setOpenMenuId(openMenuId === itemId ? null : itemId);
   }, [openMenuId]);
 
-  const handleMenuAction = useCallback((action: string, itemId: string, event: React.MouseEvent) => {
+  const handleMenuAction = useCallback((action: string, itemId: string, event: React.MouseEvent, item?: any) => {
     event.stopPropagation();
     event.preventDefault();
     setOpenMenuId(null);
@@ -67,17 +68,17 @@ const FileListContent = memo<{
         handleDeleteFolder(itemId);
         break;
       case 'rename':
-        // TODO: Implement rename functionality
-        console.log('Rename:', itemId);
+        if (item?.type === 'folder') {
+          handleFolderRename(item as FolderItem);
+        }
         break;
       case 'download':
-        // TODO: Implement download functionality
         console.log('Download:', itemId);
         break;
       default:
         setSelectedItem(itemId);
     }
-  }, [handleDeleteFolder, setSelectedItem, openMenuId]);
+  }, [handleDeleteFolder, handleFolderRename, setSelectedItem, openMenuId]);
   if (viewMode === 'list') {
     return (
       <div className="p-6">
@@ -140,7 +141,7 @@ const FileListContent = memo<{
                             <>
                               <button
                                 className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-                                onClick={(e) => handleMenuAction('rename', item.id, e)}
+                                onClick={(e) => handleMenuAction('rename', item.id, e, item)}
                               >
                                 Rename
                               </button>
@@ -240,6 +241,8 @@ export default function FilesPage() {
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([]);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  const [folderModalMode, setFolderModalMode] = useState<'create' | 'rename'>('create');
+  const [selectedFolder, setSelectedFolder] = useState<FolderItem | null>(null);
 
   // Get folder path - support both nested routes and query params
   const pathParam = params.path;
@@ -386,19 +389,25 @@ export default function FilesPage() {
     if (!selectedProvider) return;
     
     try {
-      await createFolder(selectedProvider.id, {
-        name,
-        parent_id: currentFolderId || undefined
-      });
+      if (folderModalMode === 'create') {
+        await createFolder(selectedProvider.id, {
+          name,
+          parent_id: currentFolderId || undefined
+        });
+      } else if (folderModalMode === 'rename' && selectedFolder) {
+        const { updateFolder } = await import('@/services/folder.service');
+        await updateFolder(selectedFolder.id, { name });
+      }
       
       // Refresh folder list
       const folderList = await listFolders(selectedProvider.id, currentFolderId || undefined);
       setFolders(folderList);
+      setShowFolderModal(false);
     } catch (error) {
-      console.error('Failed to create folder:', error);
+      console.error('Failed to save folder:', error);
       throw error;
     }
-  }, [selectedProvider, currentFolderId]);
+  }, [selectedProvider, currentFolderId, folderModalMode, selectedFolder]);
 
   const handleDeleteFolder = useCallback(async (folderId: string) => {
     try {
@@ -595,7 +604,11 @@ export default function FilesPage() {
               <Upload className="w-4 h-4 mr-2" />
               Upload Files
             </Button>
-            <Button variant="outline" onClick={() => setShowFolderModal(true)}>
+            <Button variant="outline" onClick={() => {
+              setFolderModalMode('create');
+              setSelectedFolder(null);
+              setShowFolderModal(true);
+            }}>
               <FolderPlus className="w-4 h-4 mr-2" />
               New Folder
             </Button>
@@ -651,6 +664,11 @@ export default function FilesPage() {
           viewMode={viewMode}
           handleFolderClick={handleFolderClick}
           handleDeleteFolder={handleDeleteFolder}
+          handleFolderRename={(folder) => {
+            setFolderModalMode('rename');
+            setSelectedFolder(folder);
+            setShowFolderModal(true);
+          }}
           setSelectedItem={handleSetSelectedItem}
           formatBytes={formatBytes}
           getFileIcon={getFileIcon}
@@ -662,7 +680,8 @@ export default function FilesPage() {
         isOpen={showFolderModal}
         onClose={() => setShowFolderModal(false)}
         onSubmit={handleCreateFolder}
-        title="Create New Folder"
+        initialName={folderModalMode === 'rename' ? selectedFolder?.name || '' : ''}
+        title={folderModalMode === 'rename' ? 'Rename Folder' : 'Create New Folder'}
       />
     </div>
   );

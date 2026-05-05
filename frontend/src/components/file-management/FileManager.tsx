@@ -150,14 +150,25 @@ export const FileManager: React.FC<FileManagerProps> = ({
   }, [loadItems]);
 
   const handleFolderSubmit = async (name: string) => {
-    if (folderModalMode === 'create') {
-      await createFolder(providerId, { name, parent_id: currentFolderId || undefined });
-      addToast({ type: 'success', title: 'Folder created', message: `Created folder "${name}"` });
-    } else if (folderModalMode === 'rename' && selectedFolder) {
-      await updateFolder(selectedFolder.id, { name });
-      addToast({ type: 'success', title: 'Folder renamed', message: `Renamed folder to "${name}"` });
+    try {
+      if (folderModalMode === 'create') {
+        await createFolder(providerId, { name, parent_id: currentFolderId || undefined });
+        addToast({ type: 'success', title: 'Folder created', message: `Created folder "${name}"` });
+      } else if (folderModalMode === 'rename' && selectedFolder) {
+        await updateFolder(selectedFolder.id, { name });
+        addToast({ type: 'success', title: 'Folder renamed', message: `Renamed folder to "${name}"` });
+      }
+      await loadItems();
+      setShowFolderModal(false);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      addToast({ 
+        type: 'error', 
+        title: folderModalMode === 'rename' ? 'Failed to rename folder' : 'Failed to create folder', 
+        message: errorMessage 
+      });
+      throw error; // Re-throw so FolderModal can handle it
     }
-    await loadItems();
   };
 
   const handleDeleteFolder = async (folder: FolderItem) => {
@@ -175,16 +186,18 @@ export const FileManager: React.FC<FileManagerProps> = ({
   return (
     <div className={`space-y-0 ${className}`}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-3 px-5 py-3 bg-white border-b border-border">
+      <div className="flex items-center justify-between gap-1.5 px-2 sm:px-5 py-2 sm:py-3 bg-white border-b border-border overflow-x-auto">
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <Button
             variant="default"
             size="sm"
             onClick={() => setShowUploader(!showUploader)}
             icon={<Upload className="w-4 h-4" />}
+            className="sm:px-3 px-1.5 h-8"
+            title="Upload files"
           >
-            Upload
+            <span className="hidden sm:inline ml-1">Upload</span>
           </Button>
 
           <Button
@@ -196,8 +209,10 @@ export const FileManager: React.FC<FileManagerProps> = ({
               setShowFolderModal(true);
             }}
             icon={<FolderOpen className="w-4 h-4" />}
+            className="sm:px-3 px-1.5 h-8"
+            title="Create new folder"
           >
-            + New
+            <span className="hidden sm:inline ml-1">+ New</span>
           </Button>
 
           <Button
@@ -205,7 +220,8 @@ export const FileManager: React.FC<FileManagerProps> = ({
             size="sm"
             onClick={handleRefresh}
             disabled={loading || !providerId}
-            className="p-2"
+            className="p-1.5 h-8 w-8 flex-shrink-0"
+            title="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
@@ -244,23 +260,25 @@ export const FileManager: React.FC<FileManagerProps> = ({
         )}
       </AnimatePresence>
 
-      <div className="space-y-0 min-h-[400px] bg-white rounded-xl border border-border overflow-hidden">
+      <div className="space-y-0 min-h-[400px] bg-white rounded-lg sm:rounded-xl border border-border overflow-hidden">
           {/* Breadcrumbs + View controls row */}
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
-            <Breadcrumbs 
-              items={breadcrumbs} 
-            />
+          <div className="flex items-center justify-between gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2.5 border-b border-border overflow-x-auto">
+            <div className="hidden sm:block flex-shrink-0">
+              <Breadcrumbs 
+                items={breadcrumbs} 
+              />
+            </div>
 
-            <div className="flex items-center gap-1">
-              {/* Search inline */}
-              <div className="relative mr-2">
+            <div className="flex items-center gap-0.5 ml-auto flex-shrink-0">
+              {/* Search inline - hidden on mobile */}
+              <div className="relative hidden sm:block">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Search files..."
-                  className="h-8 w-48 pl-8 pr-3 rounded-md border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  placeholder="Search..."
+                  className="h-8 w-40 pl-8 pr-3 rounded-md border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                 />
                 {searchQuery && (
                   <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -272,7 +290,8 @@ export const FileManager: React.FC<FileManagerProps> = ({
                 variant={viewMode === 'list' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('list')}
-                className="p-1.5 h-8 w-8"
+                className="p-1.5 h-8 w-8 flex-shrink-0"
+                title="List view"
               >
                 <List className="w-4 h-4" />
               </Button>
@@ -280,7 +299,8 @@ export const FileManager: React.FC<FileManagerProps> = ({
                 variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('grid')}
-                className="p-1.5 h-8 w-8"
+                className="p-1.5 h-8 w-8 flex-shrink-0"
+                title="Grid view"
               >
                 <Grid className="w-4 h-4" />
               </Button>
