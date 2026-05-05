@@ -10,8 +10,9 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EditProviderDialog } from './EditProviderDialog';
 import { activateProvider, deactivateProvider, deleteProvider } from '@/services/provider.service';
 import { useToast } from '@/components/base/Toast';
-import { Database, Server, Loader2, Trash2, Edit2 } from 'lucide-react';
+import { Loader2, Trash2, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ProviderIcon } from '@/components/ui/ProviderIcon';
 
 interface ProviderCardProps {
   provider: Provider;
@@ -72,13 +73,14 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({ provider, onRefresh 
           <div className="flex items-center space-x-4 min-w-0">
             <div className={cn(
               "p-3 rounded-xl transition-colors",
-              provider.is_active ? "bg-primary/10" : "bg-muted text-muted-foreground"
+              provider.is_active ? "bg-primary/10" : "bg-muted"
             )}>
-              {provider.provider_type?.toLowerCase().includes('s3') ? (
-                <Database className={cn("w-6 h-6", provider.is_active ? "text-primary" : "text-muted-foreground")} />
-              ) : (
-                <Server className={cn("w-6 h-6", provider.is_active ? "text-primary" : "text-muted-foreground")} />
-              )}
+              <ProviderIcon
+                type={provider.provider_type}
+                size="lg"
+                color={provider.is_active ? undefined : 'currentColor'}
+                className={provider.is_active ? '' : 'text-muted-foreground opacity-50'}
+              />
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-lg leading-tight truncate" title={provider.provider_name || provider.name}>

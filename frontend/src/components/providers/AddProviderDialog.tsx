@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ProviderType, CreateProviderRequest } from '@/types/provider.types';
 import { useProviderMutations } from '@/hooks/useProviderMutations';
+import { ProviderIcon } from '@/components/ui/ProviderIcon';
 
 interface AddProviderDialogProps {
   isOpen: boolean;
@@ -18,14 +19,14 @@ interface AddProviderDialogProps {
 }
 
 const providerOptions = [
-  { type: ProviderType.AWS, name: 'AWS S3', icon: '☁️', description: 'Amazon Web Services S3' },
-  { type: ProviderType.CLOUDFLARE, name: 'Cloudflare R2', icon: '🔶', description: 'Cloudflare R2 Storage' },
-  { type: ProviderType.ORACLE, name: 'Oracle Cloud', icon: '🔴', description: 'Oracle Cloud Storage' },
-  { type: ProviderType.OTHERS, name: 'Backblaze B2', icon: '🔥', description: 'Backblaze B2 Cloud' },
-  { type: ProviderType.OTHERS, name: 'Wasabi', icon: '🟢', description: 'Wasabi Hot Storage' },
-  { type: ProviderType.OTHERS, name: 'MinIO', icon: '🔵', description: 'Self-hosted MinIO' },
-  { type: ProviderType.OTHERS, name: 'Azure Blob', icon: '🔷', description: 'Azure Blob Storage' },
-  { type: ProviderType.OTHERS, name: 'Other S3', icon: '⚙️', description: 'Any S3-Compatible' },
+  { type: ProviderType.AWS,        name: 'AWS S3',        iconType: 'aws',         description: 'Amazon Web Services S3' },
+  { type: ProviderType.CLOUDFLARE, name: 'Cloudflare R2', iconType: 'cloudflare',  description: 'Cloudflare R2 Storage' },
+  { type: ProviderType.ORACLE,     name: 'Oracle Cloud',  iconType: 'oracle',      description: 'Oracle Cloud Storage' },
+  { type: ProviderType.OTHERS,     name: 'Backblaze B2',  iconType: 'backblaze',   description: 'Backblaze B2 Cloud' },
+  { type: ProviderType.OTHERS,     name: 'Wasabi',        iconType: 'others',      description: 'Wasabi Hot Storage' },
+  { type: ProviderType.OTHERS,     name: 'MinIO',         iconType: 'minio',       description: 'Self-hosted MinIO' },
+  { type: ProviderType.OTHERS,     name: 'Azure Blob',    iconType: 'azure',       description: 'Azure Blob Storage' },
+  { type: ProviderType.OTHERS,     name: 'Other S3',      iconType: 'others',      description: 'Any S3-Compatible' },
 ];
 
 export const AddProviderDialog: React.FC<AddProviderDialogProps> = ({ isOpen, onClose, onSuccess }) => {
@@ -246,7 +247,9 @@ export const AddProviderDialog: React.FC<AddProviderDialogProps> = ({ isOpen, on
                               isSelected ? 'border-primary bg-primary/5 shadow-card' : 'border-border hover:border-primary/30'
                             }`}
                           >
-                            <div className="text-2xl">{p.icon}</div>
+                            <div className="w-10 h-10 flex items-center justify-center">
+                              <ProviderIcon type={p.iconType} size="lg" />
+                            </div>
                             <span className="text-xs font-medium text-foreground">{p.name}</span>
                           </button>
                         );
