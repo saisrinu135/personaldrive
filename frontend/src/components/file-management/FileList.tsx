@@ -25,7 +25,7 @@ import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/base/Toast';
 import { FileItem } from '@/types/file.types';
-import { downloadFile, getFileDirectLink } from '@/services/file.service';
+import { downloadFile, getFileDirectLink, getFilePreviewUrl } from '@/services/file.service';
 import { FilePreviewModal } from './FilePreviewModal';
 import { FolderItem } from '@/services/folder.service';
 import { ListItem } from './FileManager';
@@ -98,24 +98,24 @@ export const FileList: React.FC<FileListProps> = ({
     }
   }, [onDownload, addToast]);
 
-  // ─── Open (view in modal) ────────────────────────────────────────────────────
+  // ─── Open (view inline) — uses /preview (inline=True) ─────────────────────
 
   const handleOpen = useCallback(async (file: FileWithActions) => {
     try {
-      const url = await getFileDirectLink(file.id);
+      const url = await getFilePreviewUrl(file.id);
       setPreviewFile({ file, url });
     } catch (error) {
       addToast({ type: 'error', title: 'Failed to open file', message: error instanceof Error ? error.message : 'Error' });
     }
   }, [addToast]);
 
-  // ─── Share (copy link to clipboard) ─────────────────────────────────────────
+  // ─── Share (copy inline link to clipboard) — uses /preview (inline=True) ───
 
   const handleShare = useCallback(async (file: FileWithActions) => {
     try {
-      const url = await getFileDirectLink(file.id);
+      const url = await getFilePreviewUrl(file.id);
       await navigator.clipboard.writeText(url);
-      addToast({ type: 'success', title: 'Link copied', message: 'Share link copied to clipboard (expires in 1 hour)' });
+      addToast({ type: 'success', title: 'Link copied', message: 'Shareable link copied to clipboard' });
     } catch (error) {
       addToast({ type: 'error', title: 'Share failed', message: error instanceof Error ? error.message : 'Failed to generate link' });
     }
