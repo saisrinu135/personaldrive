@@ -5,6 +5,7 @@ import { Search, Bell, Settings, User, LogOut, Plus, ChevronDown } from 'lucide-
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/contexts/AuthContext';
+import { ProviderIcon } from '@/components/ui/ProviderIcon';
 
 interface Provider {
   id: string;
@@ -72,14 +73,6 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const providerIcons = {
-    aws: '🟠',
-    cloudflare: '🟠', 
-    oracle: '🔴',
-    minio: '🟣',
-    backblaze: '🔴',
-    digitalocean: '🔵'
-  };
 
   return (
     <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6">
@@ -94,9 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
               }}
               className="flex items-center space-x-2 px-3 py-1 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
-              <span className="text-sm">
-                {providerIcons[selectedProvider.provider_type as keyof typeof providerIcons] || '☁️'}
-              </span>
+              <ProviderIcon type={selectedProvider.provider_type} size="sm" />
               <span className="text-sm font-medium text-gray-900 dark:text-white">
                 {selectedProvider.name}
               </span>
@@ -120,9 +111,7 @@ export const Header: React.FC<HeaderProps> = ({
                         selectedProvider.id === provider.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
                       }`}
                     >
-                      <span className="text-sm">
-                        {providerIcons[provider.provider_type as keyof typeof providerIcons] || '☁️'}
-                      </span>
+                      <ProviderIcon type={provider.provider_type} size="sm" />
                       <div className="flex-1">
                         <div className="font-medium">{provider.name}</div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">

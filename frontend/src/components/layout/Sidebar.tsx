@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/Button';
 
 import { Provider } from '@/types/provider.types';
+import { ProviderIcon } from '@/components/ui/ProviderIcon';
 
 interface SidebarProps {
   selectedProvider?: string;
@@ -25,12 +26,6 @@ interface SidebarProps {
   metrics?: any;
 }
 
-const providerIcons = {
-  oracle: '🔴',
-  aws: '🟠',
-  cloudflare: '🟠',
-  others: '☁️'
-};
 
 export const Sidebar: React.FC<SidebarProps> = ({
   selectedProvider,
@@ -133,9 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }`}
               >
                 <div className="flex items-center space-x-2 flex-1 min-w-0">
-                  <span className="text-sm">
-                    {providerIcons[provider.provider_type as keyof typeof providerIcons] || '☁️'}
-                  </span>
+                  <ProviderIcon type={provider.provider_type} size="sm" />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm truncate">
                       {provider.name}

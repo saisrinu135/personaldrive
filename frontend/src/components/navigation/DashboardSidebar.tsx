@@ -23,6 +23,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProvidersWithMetrics } from '@/hooks/useQueries';
 import { ProviderType } from '@/types/provider.types';
 import { formatBytes } from '@/services/metrics.service';
+import { ProviderIcon } from '@/components/ui/ProviderIcon';
 
 interface DashboardSidebarProps {
   collapsed?: boolean;
@@ -38,19 +39,6 @@ const navItems = [
   { name: 'Recycle Bin', href: '/dashboard/trash', icon: Trash2 },
 ];
 
-// Map provider type to a recognizable icon/label
-function getProviderIcon(type: ProviderType) {
-  switch (type) {
-    case ProviderType.AWS:
-      return { bg: 'bg-orange-100', text: 'text-orange-600', label: 'AWS' };
-    case ProviderType.CLOUDFLARE:
-      return { bg: 'bg-amber-100', text: 'text-amber-600', label: 'CF' };
-    case ProviderType.ORACLE:
-      return { bg: 'bg-red-100', text: 'text-red-600', label: 'OCI' };
-    default:
-      return { bg: 'bg-slate-100', text: 'text-slate-600', label: 'S3' };
-  }
-}
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   collapsed = false,
@@ -157,7 +145,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             </p>
             <div className="space-y-2">
               {providers.map(provider => {
-                const meta = getProviderIcon(provider.provider_type);
                 const providerMetrics = metrics?.by_provider?.find(
                   (m: any) => m.provider_id === provider.id
                 );
@@ -172,8 +159,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                     key={provider.id}
                     className="flex items-start gap-2.5 px-2 py-2 rounded-lg hover:bg-secondary transition-colors cursor-pointer"
                   >
-                    <div className={cn('w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 text-[10px] font-bold', meta.bg, meta.text)}>
-                      {meta.label}
+                    <div className="w-7 h-7 rounded-md bg-secondary flex items-center justify-center flex-shrink-0">
+                      <ProviderIcon type={provider.provider_type} size="sm" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">

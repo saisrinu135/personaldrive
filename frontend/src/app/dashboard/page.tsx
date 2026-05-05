@@ -6,22 +6,11 @@ import { Card } from '@/components/ui/Card';
 import { useRouter } from 'next/navigation';
 import { useDashboard } from './layout';
 import { formatBytes } from '@/services/metrics.service';
+import { ProviderIcon } from '@/components/ui/ProviderIcon';
 
 export default function DashboardPage() {
   const router = useRouter();
   const { providers, metrics, refetchData } = useDashboard();
-
-  const getProviderIcon = (type: string) => {
-    const icons = {
-      aws: '🟠',
-      cloudflare: '🟠',
-      oracle: '🔴',
-      minio: '🟣',
-      backblaze: '🔴',
-      digitalocean: '🔵'
-    };
-    return icons[type as keyof typeof icons] || '☁️';
-  };
 
   return (
     <div className="p-6 space-y-6">
@@ -116,7 +105,7 @@ export default function DashboardPage() {
                 onClick={() => router.push('/dashboard/files')}
               >
                 <div className="flex items-center space-x-3 mb-3">
-                  <span className="text-2xl">{getProviderIcon(account.provider_type)}</span>
+                  <ProviderIcon type={account.provider_type} size="lg" />
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900 dark:text-white">{account.name}</h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
