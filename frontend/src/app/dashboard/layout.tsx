@@ -60,10 +60,11 @@ export default function DashboardLayout({
   
   const { providers, metrics, isLoading, error, refetch } = queryResult;
 
-  // Set initial selected provider
+  // Set initial selected provider — prefer is_default, fall back to first
   React.useEffect(() => {
     if (providers.length > 0 && !selectedProvider) {
-      setSelectedProvider(providers[0].id);
+      const defaultProvider = providers.find(p => p.is_default) ?? providers[0];
+      setSelectedProvider(defaultProvider.id);
     }
   }, [providers, selectedProvider]);
 
