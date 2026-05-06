@@ -31,7 +31,8 @@ import { FolderModal } from './FolderModal';
 import { Provider } from '@/types/provider.types';
 
 export interface FileManagerProps {
-  providerId: string;
+  /** Provider UUID to filter by. Undefined = show all providers' files */
+  providerId?: string;
   providers?: Provider[];
   /** Optional external search query (e.g. from global header search bar) */
   searchQuery?: string;
@@ -77,9 +78,12 @@ export const FileManager: React.FC<FileManagerProps> = ({
   const loadItems = useCallback(async () => {
     setLoading(true);
     try {
+      // When no provider is selected, only fetch files (folders are provider-scoped)
       const [filesRes, foldersRes] = await Promise.all([
-        listFiles({ providerId, folderId: currentFolderId || undefined }),
-        listFolders(providerId, currentFolderId || undefined),
+        listFiles({ providerId: providerId || undefined, folderId: currentFolderId || undefined }),
+        providerId
+          ? listFolders(providerId, currentFolderId || undefined)
+          : Promise.resolve([] as FolderItem[]),
       ]);
 
       const fileItems: FileItem[] = filesRes.objects.map(file => ({
@@ -115,8 +119,8 @@ export const FileManager: React.FC<FileManagerProps> = ({
   }, [providerId, currentFolderId, addToast]);
 
   useEffect(() => {
-    if (providerId) loadItems();
-  }, [loadItems, providerId]);
+    loadItems();
+  }, [loadItems]);
 
   // ─── Filter + Sort (computed, no extra state) ─────────────────────────────
 
@@ -169,6 +173,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
   const handleFolderSubmit = async (name: string) => {
     try {
       if (folderModalMode === 'create') {
+        if (!providerId) return;
         await createFolder(providerId, { name, parent_id: currentFolderId || undefined });
         addToast({ type: 'success', title: 'Folder created', message: `Created "${name}"` });
       } else if (folderModalMode === 'rename' && selectedFolder) {
@@ -203,7 +208,8 @@ export const FileManager: React.FC<FileManagerProps> = ({
             size="sm"
             onClick={() => setShowUploadModal(true)}
             className="h-8 px-2 sm:px-3 flex-shrink-0"
-            title="Upload files"
+            title={providerId ? 'Upload files' : 'Select a provider to upload files'}
+            disabled={!providerId}
           >
             <Upload className="w-4 h-4" />
             <span className="hidden sm:inline ml-1.5">Upload</span>
@@ -214,7 +220,8 @@ export const FileManager: React.FC<FileManagerProps> = ({
             size="sm"
             onClick={() => { setFolderModalMode('create'); setSelectedFolder(null); setShowFolderModal(true); }}
             className="h-8 px-2 sm:px-3 flex-shrink-0"
-            title="Create new folder"
+            title={providerId ? 'Create new folder' : 'Select a provider to create folders'}
+            disabled={!providerId}
           >
             <FolderOpen className="w-4 h-4" />
             <span className="hidden sm:inline ml-1.5">New Folder</span>
@@ -224,7 +231,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleRefresh}
-            disabled={loading || !providerId}
+            disabled={loading}
             className="h-8 w-8 p-0 flex-shrink-0"
             title="Refresh"
           >
