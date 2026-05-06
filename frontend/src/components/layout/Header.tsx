@@ -21,6 +21,7 @@ interface HeaderProps {
     name: string;
     email: string;
   };
+  /** Currently selected provider — undefined means 'All Buckets' */
   selectedProvider?: Provider;
   providers?: Provider[];
   searchQuery?: string;
@@ -78,66 +79,86 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6">
       {/* Left side - Provider info and search */}
       <div className="flex items-center space-x-4 flex-1">
-        {selectedProvider && (
-          <div className="relative">
-            <div 
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowProviderMenu(!showProviderMenu);
-              }}
-              className="flex items-center space-x-2 px-3 py-1 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
+        {/* Provider / bucket selector — always visible */}
+        <div className="relative">
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowProviderMenu(!showProviderMenu);
+            }}
+            className="flex items-center space-x-2 px-3 py-1 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            {selectedProvider ? (
               <ProviderIcon type={selectedProvider.provider_type} size="sm" />
-              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                {selectedProvider.name}
-              </span>
-              <ChevronDown className="w-3 h-3 text-gray-400" />
-            </div>
-            
-            {showProviderMenu && (
-              <div 
-                onClick={(e) => e.stopPropagation()}
-                className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50"
-              >
-                <div className="py-1 max-h-64 overflow-y-auto">
-                  {providers.map((provider) => (
-                    <button
-                      key={provider.id}
-                      onClick={() => {
-                        onProviderSelect?.(provider.id);
-                        setShowProviderMenu(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-2 ${
-                        selectedProvider.id === provider.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
-                      }`}
-                    >
-                      <ProviderIcon type={provider.provider_type} size="sm" />
-                      <div className="flex-1">
-                        <div className="font-medium">{provider.name}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                          {provider.provider_type}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                  
-                  <hr className="my-1 border-gray-200 dark:border-gray-700" />
-                  
+            ) : (
+              <span className="w-4 h-4 rounded-full bg-gray-300 dark:bg-gray-600 inline-block flex-shrink-0" />
+            )}
+            <span className="text-sm font-medium text-gray-900 dark:text-white">
+              {selectedProvider ? selectedProvider.name : 'All Buckets'}
+            </span>
+            <ChevronDown className="w-3 h-3 text-gray-400" />
+          </div>
+
+          {showProviderMenu && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+            >
+              <div className="py-1 max-h-64 overflow-y-auto">
+                {/* All Buckets option */}
+                <button
+                  onClick={() => {
+                    onProviderSelect?.('');
+                    setShowProviderMenu(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                    !selectedProvider ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  <span className="w-4 h-4 rounded-full bg-gray-300 dark:bg-gray-500 inline-block flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="font-medium">All Buckets</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Show files from all providers</div>
+                  </div>
+                </button>
+
+                {providers.length > 0 && <hr className="my-1 border-gray-200 dark:border-gray-700" />}
+
+                {providers.map((provider) => (
                   <button
+                    key={provider.id}
                     onClick={() => {
-                      onAddProvider?.();
+                      onProviderSelect?.(provider.id);
                       setShowProviderMenu(false);
                     }}
-                    className="w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-2"
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-2 ${
+                      selectedProvider?.id === provider.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    }`}
                   >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Storage Account</span>
+                    <ProviderIcon type={provider.provider_type} size="sm" />
+                    <div className="flex-1">
+                      <div className="font-medium">{provider.name}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">{provider.provider_type}</div>
+                    </div>
                   </button>
-                </div>
+                ))}
+
+                <hr className="my-1 border-gray-200 dark:border-gray-700" />
+
+                <button
+                  onClick={() => {
+                    onAddProvider?.();
+                    setShowProviderMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Storage Account</span>
+                </button>
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
         
         <form onSubmit={handleSearchSubmit} className="flex-1 max-w-md">
           <div className="relative">

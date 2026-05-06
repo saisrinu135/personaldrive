@@ -60,13 +60,17 @@ export default function DashboardLayout({
   
   const { providers, metrics, isLoading, error, refetch } = queryResult;
 
-  // Set initial selected provider — prefer is_default, fall back to first
+  // Restore persisted provider selection from localStorage
   React.useEffect(() => {
-    if (providers.length > 0 && !selectedProvider) {
-      const defaultProvider = providers.find(p => p.is_default) ?? providers[0];
-      setSelectedProvider(defaultProvider.id);
+    const saved = localStorage.getItem('selectedProvider') ?? '';
+    // Validate that saved provider still exists; fall back to '' (All)
+    if (saved && providers.length > 0) {
+      const exists = providers.some(p => p.id === saved);
+      setSelectedProvider(exists ? saved : '');
     }
-  }, [providers, selectedProvider]);
+  // Only run once after providers first load
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [providers.length > 0 ? 'loaded' : 'empty']);
 
   const handleAddProvider = () => {
     router.push('/dashboard/providers?add=true');
@@ -74,6 +78,7 @@ export default function DashboardLayout({
 
   const handleProviderSelect = (providerId: string) => {
     setSelectedProvider(providerId);
+    localStorage.setItem('selectedProvider', providerId);
   };
 
   const handleSearch = (query: string) => {
