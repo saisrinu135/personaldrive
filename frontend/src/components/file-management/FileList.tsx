@@ -36,7 +36,7 @@ export interface FileListProps {
   onRefresh?: () => void;
   loading?: boolean;
   emptyMessage?: string;
-  providerId: string;
+  providerId?: string;
   className?: string;
   viewMode?: 'grid' | 'list';
   folders?: FolderItem[];
