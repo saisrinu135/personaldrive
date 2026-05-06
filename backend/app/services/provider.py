@@ -314,6 +314,13 @@ class StorageService:
         
         if update_data:
             from sqlalchemy import update
+            if update_data.get('is_default') == True:
+                await self.db.execute(
+                    update(StorageProvider)
+                    .where(StorageProvider.user_id == user_id)
+                    .where(StorageProvider.id != provider_id)
+                    .values(is_default=False)
+                )
             await self.db.execute(
                 update(StorageProvider).where(StorageProvider.id == provider_id).values(**update_data)
             )
