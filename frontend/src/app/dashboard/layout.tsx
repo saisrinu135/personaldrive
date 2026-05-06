@@ -133,7 +133,7 @@ export default function DashboardLayout({
           <Sidebar
             selectedProvider={selectedProvider}
             providers={providers}
-            onProviderSelect={setSelectedProvider}
+            onProviderSelect={handleProviderSelect}
             onAddProvider={handleAddProvider}
             metrics={metrics}
           />
@@ -143,7 +143,7 @@ export default function DashboardLayout({
           <Header
             onSearch={handleSearch}
             onAddProvider={handleAddProvider}
-            onProviderSelect={setSelectedProvider}
+            onProviderSelect={handleProviderSelect}
             currentUser={user || undefined}
             selectedProvider={selectedProviderData}
             providers={providers}
