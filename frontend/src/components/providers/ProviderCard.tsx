@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/Switch';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EditProviderDialog } from './EditProviderDialog';
-import { activateProvider, deactivateProvider, deleteProvider } from '@/services/provider.service';
+import { activateProvider, deactivateProvider, deleteProvider, updateProvider } from '@/services/provider.service';
 import { useToast } from '@/components/base/Toast';
-import { Loader2, Trash2, Edit2 } from 'lucide-react';
+import { Loader2, Trash2, Edit2, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProviderIcon } from '@/components/ui/ProviderIcon';
 
@@ -22,6 +22,7 @@ interface ProviderCardProps {
 export const ProviderCard: React.FC<ProviderCardProps> = ({ provider, onRefresh }) => {
   const [isToggling, setIsToggling] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSettingDefault, setIsSettingDefault] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const { addToast } = useToast();
@@ -60,6 +61,19 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({ provider, onRefresh 
     }
   };
 
+  const handleSetDefault = async () => {
+    try {
+      setIsSettingDefault(true);
+      await updateProvider(provider.id, { is_default: true });
+      addToast({ type: 'success', title: 'Default provider set', message: `${provider.provider_name || provider.name} is now the default.` });
+      onRefresh();
+    } catch (error: any) {
+      addToast({ type: 'error', title: 'Failed to set default', message: error.message || 'Could not set default provider.' });
+    } finally {
+      setIsSettingDefault(false);
+    }
+  };
+
   const limit = provider.storage_limit_gb || usage?.storage_limit_gb || 0;
   const hasLimit = limit > 0;
 
@@ -83,9 +97,16 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({ provider, onRefresh 
               />
             </div>
             <div className="min-w-0">
-              <h3 className="font-bold text-lg leading-tight truncate" title={provider.provider_name || provider.name}>
-                {provider.provider_name || provider.name}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-lg leading-tight truncate" title={provider.provider_name || provider.name}>
+                  {provider.provider_name || provider.name}
+                </h3>
+                {provider.is_default && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-semibold flex-shrink-0">
+                    <Star className="w-2.5 h-2.5 fill-current" /> Default
+                  </span>
+                )}
+              </div>
               <div className="text-xs text-muted-foreground mt-1 truncate">
                 {provider.name}
               </div>
@@ -176,20 +197,43 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({ provider, onRefresh 
           </div>
         )}
 
-        <div className="mt-4 pt-4 border-t border-border flex justify-end space-x-2">
-          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="gap-1.5 px-3">
-            <Edit2 className="w-3.5 h-3.5" />
-            Edit
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setDeleteOpen(true)} 
-            className="text-red-500 hover:text-red-600 hover:bg-red-50 shadow-none border-red-200 gap-1.5 px-3"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            Remove
-          </Button>
+        <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
+          {/* Set Default */}
+          {!provider.is_default ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSetDefault}
+              disabled={isSettingDefault}
+              className="gap-1.5 px-3 text-muted-foreground hover:text-amber-600"
+            >
+              {isSettingDefault
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Star className="w-3.5 h-3.5" />
+              }
+              Set as Default
+            </Button>
+          ) : (
+            <span className="flex items-center gap-1 text-xs text-amber-600 font-medium px-3">
+              <Star className="w-3.5 h-3.5 fill-current" /> Default provider
+            </span>
+          )}
+
+          <div className="flex space-x-2">
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="gap-1.5 px-3">
+              <Edit2 className="w-3.5 h-3.5" />
+              Edit
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setDeleteOpen(true)} 
+              className="text-red-500 hover:text-red-600 hover:bg-red-50 shadow-none border-red-200 gap-1.5 px-3"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Remove
+            </Button>
+          </div>
         </div>
       </Card>
 
