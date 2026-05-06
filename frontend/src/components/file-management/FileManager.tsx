@@ -339,7 +339,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
         onUploadComplete={() => { loadItems(); setShowUploadModal(false); }}
-        providerId={providerId}
+        providerId={providerId ?? ''}
         providers={providers}
         folderId={currentFolderId || undefined}
       />
