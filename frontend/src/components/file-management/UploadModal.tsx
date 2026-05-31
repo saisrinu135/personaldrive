@@ -48,7 +48,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -64,7 +64,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
           {/* Modal */}
           <motion.div
-            className="relative w-full sm:max-w-xl bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden"
+            className="relative w-full sm:max-w-xl bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden mb-16 sm:mb-0"
             initial={{ y: 60, opacity: 0, scale: 0.97 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 60, opacity: 0, scale: 0.97 }}
